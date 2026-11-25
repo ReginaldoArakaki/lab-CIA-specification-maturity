@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Laboratório CIA · T17</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Spectral:wght@500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: sala de aula de arquitetura — claro, direto, didático; cada número explicável
+   IDEA: um painel de operação (NOC) que os grupos montam e "quebram" de propósito
+   PICTURE: o gráfico demanda × capacidade com faixas de incidente e a régua de status minuto a minuto
+   COLOUR and TYPE: branco e tinta #14110f, ultramar #1d2bd8; cores de maturidade N1–N4 dos cards; Spectral títulos + Inter
+   LAYOUT: barra superior com grupo e abas; cada aba uma bancada de trabalho até 1240px */
+:root{color-scheme:light dark;
+--bg:light-dark(#ffffff,#0d0e18);--ink:light-dark(#14110f,#ecebf3);--mute:light-dark(#5d6470,#a3a8b8);
+--line:light-dark(#e3e5ea,#262a3d);--soft:light-dark(#f5f6f8,#151827);--card:light-dark(#ffffff,#121524);
+--ac:light-dark(#1d2bd8,#8f99ff);--acs:light-dark(#eceefe,#1b1f45);
+--n1:#d9481c;--n2:#c99a06;--n3:#1f6fb2;--n4:#2f7d32;--bad:#c62828;--warn:#d98a00;--ok:#2f7d32;
+--C:#7b3fb0;--I:#0f7c86;--A:#1f6fb2}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Inter,system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:Spectral,Georgia,serif;font-weight:600;line-height:1.1;text-wrap:balance;margin:0}
+h1{font-size:clamp(28px,3.4vw,42px)}h2{font-size:clamp(24px,2.6vw,32px);margin-bottom:6px}h3{font-size:21px;margin-bottom:6px}
+p{margin:.4em 0}
+.top{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.bar{max-width:1240px;margin:0 auto;padding:12px 16px 0;display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:space-between}
+.brand{font-family:Spectral,serif;font-size:22px;font-weight:600}
+.brand small{font-family:Inter;font-size:14px;color:var(--mute);font-weight:500;margin-left:8px}
+.who{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:14px;color:var(--mute)}
+select,input,textarea,button{font:inherit;font-size:16px;color:var(--ink)}
+select,input[type=text],input[type=number],textarea{background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:9px 11px;min-height:44px}
+textarea{width:100%;min-height:84px;resize:vertical;line-height:1.45}
+:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+button{cursor:pointer;min-height:44px;border-radius:10px;border:1.5px solid var(--line);background:var(--card);padding:8px 14px;font-weight:600}
+button.pri{background:var(--ac);border-color:var(--ac);color:#fff}
+.sync{display:inline-flex;align-items:center;gap:6px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--mute)}.dot.on{background:var(--ok)}.dot.wait{background:var(--warn)}
+.tabs{max-width:1240px;margin:0 auto;display:flex;gap:2px;padding:6px 10px 0;overflow-x:auto}
+.tabs a{flex:none;padding:10px 14px;color:var(--mute);text-decoration:none;font-weight:600;font-size:15px;border-bottom:3px solid transparent}
+.tabs a.on{color:var(--ink);border-color:var(--ac)}
+main{max-width:1240px;margin:0 auto;padding:22px 16px 70px}
+.view{display:none}.view.on{display:block}
+.lede{color:var(--mute);max-width:70ch;margin-bottom:18px}
+.grid{display:grid;gap:14px}.g2{grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+.box{background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:16px 18px}
+.soft{background:var(--soft);border-radius:14px;padding:16px 18px}
+.tag{display:inline-block;font-size:13px;font-weight:700;border-radius:6px;padding:2px 8px;color:#fff;white-space:nowrap}
+.L1{background:var(--n1)}.L2{background:var(--n2)}.L3{background:var(--n3)}.L4{background:var(--n4)}
+.tC{background:var(--C)}.tI{background:var(--I)}.tA{background:var(--A)}
+.mute{color:var(--mute)}.small{font-size:14px}
+table{border-collapse:collapse;width:100%}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;font-size:15px}
+th{font-size:13px;color:var(--mute);font-weight:700}
+td.num,th.num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.scroll{overflow-x:auto}
+/* timeline */
+.tl{display:grid;gap:8px}
+.tlr{display:grid;grid-template-columns:110px minmax(0,1fr);gap:14px;align-items:start;padding:12px 0;border-bottom:1px solid var(--line)}
+.tlr b.t{font-variant-numeric:tabular-nums;font-size:20px;white-space:nowrap}
+.tlr .bk{font-weight:700}
+/* arquitetura */
+.tier{border-radius:14px;padding:16px 18px;border:2px solid var(--line);background:var(--card)}
+.tier.ihc{border-color:#9cc0e4}.tier.ln{border-color:#b8a8dd}.tier.ac{border-color:#9fcca3}
+.tierhd{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}
+.lvlrow{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 4px}
+.lvlrow label{display:flex;align-items:center;gap:6px;border:1.5px solid var(--line);border-radius:999px;padding:6px 12px;min-height:40px;cursor:pointer;font-weight:600;font-size:15px}
+.lvlrow input{accent-color:var(--ac);width:18px;height:18px}
+.tg{margin-top:10px}
+.tg h4{margin:10px 0 4px;font-size:14px;display:flex;gap:8px;align-items:center}
+.chk{display:flex;gap:10px;align-items:flex-start;padding:6px 0;cursor:pointer;font-size:15px}
+.chk input{width:20px;height:20px;margin-top:2px;accent-color:var(--ac);flex:none}
+.eff{font-size:15px;margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--soft)}
+.eff.gap{background:light-dark(#fff3e0,#3a2a10)}
+/* privacidade */
+.ladder{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:8px}
+.rung{border:2px solid var(--line);border-radius:12px;padding:12px;cursor:pointer;background:var(--card);text-align:left;font-weight:500}
+.rung.on{border-color:var(--ac);background:var(--acs)}
+.rung b{display:block;font-size:17px}
+.hops{display:grid;gap:8px;margin-top:14px}
+.hop{display:grid;grid-template-columns:200px minmax(0,1fr) 120px;gap:12px;align-items:center;border-radius:12px;padding:10px 14px;border:1.5px solid var(--line);background:var(--card)}
+.hop code{font-size:14px;overflow-wrap:anywhere}
+.st{font-size:13px;font-weight:800;border-radius:6px;padding:3px 8px;text-align:center;white-space:nowrap}
+.st.aberto{background:#fde2e1;color:#9b1c1c}.st.cifrado{background:#dbeafe;color:#1e3a8a}.st.token{background:#dcf5df;color:#1f5e23}.st.parcial{background:#fef3c7;color:#7a4b00}
+/* simulador */
+.simwrap{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:18px}
+.ctl label{display:block;font-size:14px;font-weight:600;margin:10px 0 2px}
+.ctl .v{float:right;font-variant-numeric:tabular-nums;color:var(--ac)}
+input[type=range]{width:100%;accent-color:var(--ac);min-height:30px}
+.inc{border-top:1px solid var(--line);padding:8px 0}
+.inc .chk{padding:4px 0}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr));gap:10px}
+.kpi{border-radius:12px;padding:12px 14px;background:var(--soft)}
+.kpi b{display:block;font-size:clamp(22px,2.4vw,30px);font-variant-numeric:tabular-nums;line-height:1.1;white-space:nowrap}
+.kpi span{font-size:13px;color:var(--mute)}
+.kpi.bad b{color:var(--bad)}.kpi.good b{color:var(--ok)}.kpi.warn b{color:var(--warn)}
+.fig{position:relative;min-height:300px;margin-top:12px}
+.fig>svg{position:absolute;inset:0;width:100%;height:100%}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--mute);margin-top:6px}
+.legend i{display:inline-block;width:14px;height:4px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.log{max-height:300px;overflow:auto;font-size:14px}
+.log li{margin:4px 0}
+.levels{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+/* ficha */
+.fc{display:grid;grid-template-columns:160px minmax(0,1fr);gap:8px 12px;align-items:start}
+.fc label{font-weight:700;font-size:14px;padding-top:10px}
+.fc input,.fc select{width:100%}
+.attrtabs{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.attrtabs button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+/* supervisor + painel */
+.qlist .chk{border-bottom:1px solid var(--line)}
+.obj{border-left:5px solid var(--ac);padding:8px 12px;background:var(--soft);border-radius:0 10px 10px 0;margin:8px 0}
+.mural{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+.note{border-radius:12px;padding:12px 14px;background:light-dark(#fff8d6,#2c2712);border:1px solid light-dark(#efdf95,#4a4120)}
+.note .meta{font-size:13px;color:var(--mute);margin-bottom:4px}
+.prov{border-radius:14px;padding:16px 18px;background:light-dark(#fff3e0,#33240c);border:1.5px solid light-dark(#f3cf8b,#5c4212);margin-top:16px}
+.bar100{height:8px;border-radius:4px;background:var(--line);overflow:hidden;margin-top:4px}
+.bar100 i{display:block;height:100%}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:15px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9}
+.toast.on{opacity:1}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+@media(max-width:860px){.simwrap{grid-template-columns:minmax(0,1fr)}.hop{grid-template-columns:minmax(0,1fr)}.fc{grid-template-columns:minmax(0,1fr)}.fc label{padding-top:4px}}
+@media(max-width:600px){.tlr{grid-template-columns:minmax(0,1fr);gap:4px}table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:8em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;white-space:normal;color:var(--mute);font-size:12px}.stack td:empty{display:none}}
+</style>
+<script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script>
+</head>
+<body>
+<header class="top">
+  <div class="bar">
+    <div class="brand">Laboratório CIA<small>T17 · Prof. Reginaldo Arakaki</small></div>
+    <div class="who">
+      <label for="grp">Seu grupo</label>
+      <select id="grp"><option value="g1">G1</option><option value="g2">G2</option><option value="g3">G3</option><option value="g4">G4</option><option value="g5">G5</option></select>
+      <span class="sync"><i class="dot" id="syncDot"></i><span id="syncTxt">conectando…</span></span>
+    </div>
+  </div>
+  <nav class="tabs" id="tabs">
+    <a href="#aula">Aula</a><a href="#caso">1 · Caso</a><a href="#arquitetura">2 · Arquitetura</a><a href="#privacidade">3 · Privacidade</a><a href="#simulador">4 · Simulador</a><a href="#ficha">5 · Ficha</a><a href="#supervisor">6 · Supervisor</a><a href="#painel">Painel</a>
+  </nav>
+</header>
+<main id="main">
+  <section class="view" id="v-aula"></section>
+  <section class="view" id="v-caso"></section>
+  <section class="view" id="v-arquitetura"></section>
+  <section class="view" id="v-privacidade"></section>
+  <section class="view" id="v-simulador"></section>
+  <section class="view" id="v-ficha"></section>
+  <section class="view" id="v-supervisor"></section>
+  <section class="view" id="v-painel"></section>
+</main>
+<div class="toast" id="toast"></div>
+<script>
+{
+/* ===================== DADOS DO MODELO ===================== */
+const H = 240; // minutos simulados
+const CASES = {
+  ingressos:{nome:'Venda de ingressos — show disputado',curto:'Ingressos',sla:99.7,
+    ctx:'A pré-venda abre às 10h. Em segundos, centenas de milhares de fãs disputam 60 mil assentos numerados. Cambistas usam bots. Cada assento só pode ser vendido uma vez.',
+    neg:[['Assentos','60.000'],['Fãs na fila (estimado)','400.000'],['Ticket médio','R$ 350'],['Base de clientes','200 mil cadastros'],['Janela crítica','primeiros 30 min']],
+    p:{B:400,M:50,t0:15,dur:30,forma:'rajada',bots:20,tent:100000,ticket:350,clientes:200000},
+    inco:'assentos vendidos em duplicidade'},
+  blackfriday:{nome:'E-commerce — pico de Black Friday',curto:'Black Friday',sla:99.9,
+    ctx:'Das 0h às 3h a demanda fica 8× acima do normal por horas seguidas. Checkout, estoque e pagamento externo precisam aguentar o platô. Os dados de cartão e CPF dos clientes estão em jogo.',
+    neg:[['Pedidos/min normais','1.500'],['Pico sustentado','8× por 3 h'],['Ticket médio','R$ 280'],['Base de clientes','2 milhões'],['RTO do checkout (contrato)','1 hora']],
+    p:{B:1500,M:8,t0:30,dur:180,forma:'plato',bots:5,tent:300000,ticket:280,clientes:2000000},
+    inco:'pedidos inconsistentes (estoque/pagamento)'}
+};
+const GROUPS = {
+  g1:{caso:'ingressos',foco:'A',titulo:'Fila virtual e pico de 50× em 10 minutos'},
+  g2:{caso:'ingressos',foco:'I',titulo:'Overbooking: o mesmo assento vendido duas vezes'},
+  g3:{caso:'blackfriday',foco:'A',titulo:'Pico sustentado de horas no checkout'},
+  g4:{caso:'blackfriday',foco:'C',titulo:'Pagamento, cartão e LGPD'},
+  g5:{caso:'ingressos',foco:'X',titulo:'Ataque: bots cambistas, credential stuffing e malware',livre:true}
+};
+const FOCO = {A:'Disponibilidade',I:'Integridade',C:'Confidencialidade + Privacidade',X:'Ataque (C, I e A)'};
+const TIERS = [
+  {id:'ihc',nome:'IHC · Interação',sub:'usuário + IoT (casa, carro, corpo, coisas, cidade)'},
+  {id:'ln',nome:'Lógica de Negócio',sub:'regras, parâmetros, workflows'},
+  {id:'ac',nome:'Acesso & Integração',sub:'bases, transações, integrações INT/EXT'}
+];
+const TAT = {
+ ihc:{2:[['ihc_mon','Monitoração de infra do provedor (CPU, rede)'],['ihc_sup','Canal de suporte para o cliente reclamar']],
+      3:[['ihc_fila','Fila virtual / sala de espera'],['ihc_rl','Rate limit no API gateway'],['ihc_alert','Monitoração de experiência com alertas'],['ihc_to','Timeout e retry no cliente']],
+      4:[['ihc_degr','Degradação graciosa automática (desliga o não crítico)'],['ihc_bot','Detecção de bots por comportamento + MFA step-up'],['ihc_tel','Telemetria de uso alimentando o controlador CIA']]},
+ ln:{2:[['ln_logs','Logs da aplicação (sem contexto de negócio)'],['ln_param','Parâmetros em arquivo, alterados à mão']],
+     3:[['ln_async','Workers assíncronos (fila / thread)'],['ln_idemp','Idempotência nas operações de pedido e pagamento'],['ln_cb','Circuit breaker nas dependências'],['ln_auto','Autoscaling por métrica de infra']],
+     4:[['ln_slo','Business drivers como SLO (vendas/min, conversão)'],['ln_flag','Atuadores de negócio (feature flags, throttling em runtime)'],['ln_pred','Predição de carga e provisionamento antecipado']]},
+ ac:{2:[['ac_bkp','Backup diário (restauração manual)'],['ac_prov','Réplica gerenciada pelo provedor cloud']],
+     3:[['ac_passiva','Redundância passiva (standby + checkpoint + ressincronismo)'],['ac_outbox','Outbox / mensageria para integrações'],['ac_retry','Retry com backoff nas integrações externas'],['ac_lag','Alertas de lag e de erro + runbook']],
+     4:[['ac_ativa','Redundância ativa (ativo-ativo com votação)'],['ac_integ','Verificação contínua de integridade (checksums, reconciliação)'],['ac_imut','Backup imutável com restauração point-in-time'],['ac_cap','Previsão de capacidade (sazonalidade)']]}
+};
+const LVN = {1:'N1 · sem controle',2:'N2 · processos manuais',3:'N3 · malha aberta',4:'N4 · malha fechada'};
+const QUEM = {1:'o cliente, nas redes sociais',2:'o suporte, após os chamados',3:'um alerta da ferramenta → operador',4:'o controlador CIA, automaticamente'};
+const PRIV = [
+ {n:'P0',t:'Dados em aberto',d:'HTTP sem TLS; banco e backups em texto claro; logs com CPF e cartão.',fonte:'Situação a evitar'},
+ {n:'P1',t:'TLS em trânsito',d:'HTTPS entre todos os saltos. Mas banco, backups e logs continuam legíveis.',fonte:'Canais seguros'},
+ {n:'P2',t:'Cifra simétrica em repouso',d:'AES-256 no banco e nos backups; chaves no KMS, separadas dos dados; senhas com hash forte.',fonte:'Autoestudo 3 · Criptografia simétrica'},
+ {n:'P3',t:'Assimétrica e assinatura',d:'Certificados e mTLS entre serviços; tokens JWT assinados; payload de pagamento assinado; envelope encryption.',fonte:'Criptografia assimétrica (chave pública/privada)'},
+ {n:'P4',t:'Tokenização e privacidade por design',d:'Cartão tokenizado no provedor de pagamento; CPF pseudonimizado; logs mascarados; minimização e retenção (LGPD).',fonte:'LGPD · privacidade por design'}
+];
+const CPF='123.456.789-09', CARD='4111 1111 1111 1111';
+function hops(p){
+  const H=[['Navegador / app → API','IHC'],['API → serviço de pedidos','IHC → LN'],['Banco de pedidos e clientes','Acesso'],['Logs e backups','Acesso'],['Serviço → gateway de pagamento','EXT']];
+  const v=[
+   [[`POST http:// … cpf=${CPF}&cartao=${CARD}`,'aberto'],[`{"cpf":"${CPF}","cartao":"${CARD}"}`,'aberto'],[`clientes: cpf=${CPF} · cartao=${CARD}`,'aberto'],[`INFO pedido cpf=${CPF} cartao=${CARD}`,'aberto'],[`{"cartao":"${CARD}","valor":350}`,'aberto']],
+   [['TLS 1.3 · 17 03 03 9a f1 c4 …','cifrado'],['TLS 1.3 · 17 03 03 52 0b e8 …','cifrado'],[`clientes: cpf=${CPF} · cartao=${CARD}`,'aberto'],[`INFO pedido cpf=${CPF} cartao=${CARD}`,'aberto'],['TLS 1.3 · 17 03 03 c2 77 1d …','cifrado']],
+   [['TLS 1.3 · 17 03 03 9a f1 c4 …','cifrado'],['TLS 1.3 · 17 03 03 52 0b e8 …','cifrado'],['AES-256-GCM · 8f3a…e21c (chave no KMS)','cifrado'],[`backup cifrado · mas log: cpf=${CPF}`,'parcial'],['TLS 1.3 · 17 03 03 c2 77 1d …','cifrado']],
+   [['TLS 1.3 + certificado verificado','cifrado'],['mTLS · JWT assinado (RS256) · eyJhbGciOi…','cifrado'],['envelope: dado (AES) + chave cifrada (RSA/KMS)','cifrado'],['backup cifrado · log: cpf=***.***.789-09','parcial'],['payload assinado + mTLS com o gateway','cifrado']],
+   [['cartão capturado direto pelo gateway (iframe) · tok_9f2c71','token'],['{"cliente":"psd_7Q2…","cartao":"tok_9f2c71"}','token'],['cpf pseudonimizado · cartão nunca armazenado','token'],['log: cliente=psd_7Q2… · retenção 90 dias','token'],['cobrança por token · tok_9f2c71','token']]
+  ][p];
+  return H.map((h,i)=>({h:h[0],c:h[1],txt:v[i][0],st:v[i][1]}));
+}
+const MALW = [
+ ['Vírus e worm','se replicam e se espalham pela rede','N3: patches + IDS; N4: isolamento automático do nó'],
+ ['Trojan','parece legítimo e abre porta para o atacante','P3: assinatura de código; N3: varredura antimalware/EDR'],
+ ['Spyware e keylogger','capturam credenciais e dados digitados','IHC N4: MFA step-up; P4: dado sensível nunca digitado no sistema'],
+ ['Ransomware','cifra o banco e pede resgate (A e I)','Acesso N4: backup imutável + point-in-time; P2: exfiltração ilegível'],
+ ['Botnet','rede de máquinas para DDoS, cambismo e credential stuffing','IHC N3: rate limit/WAF; N4: detecção comportamental']
+];
+const TOOLS = [
+ ['Testar (pentest)','Varredura de portas e serviços (ex.: nmap); proxy de interceptação para testar a aplicação web (ex.: OWASP ZAP, Burp); scanners de vulnerabilidade'],
+ ['Resistir','WAF, API gateway com rate limit, firewall, gestão de patches, KMS/HSM'],
+ ['Detectar','IDS/IPS, antimalware/EDR, SIEM correlacionando logs'],
+ ['Recuperar','SOAR (resposta automatizada), backup imutável, trilhas de auditoria']
+];
+/* incidentes: d = minutos até detectar, r = até recuperar, f = fração da capacidade durante o incidente */
+const INC = [
+ {id:'i1',nome:'Queda do banco primário',attr:'A',tier:'ac',def:60,d:[40,20,4,.5],r:[120,60,15,1.5],f:[0,0,0,.85],
+  como:['ninguém percebe até o cliente reclamar; DBA reconstrói o nó','suporte abre chamado; restauração manual do backup','alerta de heartbeat; operador promove o standby (redundância passiva)','réplica ativa assume na hora; votação descarta o nó falho']},
+ {id:'i2',nome:'Lentidão / deadlock na lógica de negócio',attr:'A',tier:'ln',def:100,d:[50,25,5,1],r:[60,35,10,3],f:[.25,.25,.6,.85],
+  como:['requisições presas; o time reinicia servidores no escuro','logs fracos; tentativa e erro até achar a trava','circuit breaker isola a dependência; operador reinicia o pool','controlador detecta pela queda de vendas/min e liga o throttling']},
+ {id:'i3',nome:'Falha da integração de pagamento externa',attr:'I',tier:'ln',def:130,d:[60,30,5,1],r:[30,30,30,30],f:[.2,.2,1,1],
+  como:['checkout síncrono trava; clientes repetem o clique','suporte recebe reclamações de cobrança duplicada','outbox guarda os pagamentos; retry com backoff ao voltar','idempotência + reconciliação automática; nenhum duplicado']},
+ {id:'i4',nome:'Ataque de bots + credential stuffing',attr:'C',tier:'ihc',def:12,d:[60,30,5,1],r:[30,30,30,30],f:[1,1,1,1],
+  como:['bots compram como humanos; contas invadidas com senhas vazadas','suporte bloqueia IPs à mão após as reclamações','rate limit e WAF cortam a maior parte; alerta ao SOC','detecção comportamental + MFA step-up bloqueiam quase tudo']},
+ {id:'i5',nome:'Malware / ransomware no banco',attr:'I',tier:'ac',def:170,d:[90,30,10,2],r:[600,240,60,10],f:[0,0,0,0],
+  como:['sem backup útil: dados perdidos e sistema parado','restauração do backup diário; perde-se o dia','réplica + backup recente; runbook de restauração','backup imutável + restauração point-in-time automática']},
+ {id:'i6',nome:'Interceptação em rede pública (Wi-Fi)',attr:'C',tier:'ihc',def:40,d:[0,0,0,0],r:[60,60,60,60],f:[1,1,1,1],
+  como:['','','','']}
+];
+const QUEST = [
+ 'Qual é o SLA que prometemos aos clientes — e como ele é medido?',
+ 'Se o banco primário cair agora, o que acontece e em quanto tempo voltamos?',
+ 'Quem fica sabendo primeiro de um problema: a ferramenta, o suporte ou o cliente?',
+ 'Temos RTO e RPO definidos para os sistemas críticos?',
+ 'Como nos preparamos para picos (Black Friday, lançamentos)?',
+ 'Onde ficam as chaves de criptografia e quem tem acesso a elas?',
+ 'Os logs guardam dados pessoais (CPF, cartão)?',
+ 'Existe algum ADR ou decisão registrada sobre disponibilidade ou segurança?',
+ 'Já tivemos um incidente que eu possa estudar como caso?',
+ 'Que métricas de negócio acompanhamos em tempo real?',
+ 'Os pagamentos são idempotentes? O que acontece se a integração repetir a chamada?',
+ 'Como a LGPD aparece na arquitetura (minimização, retenção, consentimento)?'
+];
+const OBJ = [
+ ['“Não temos tempo para isso agora.”','“Entendo. Consigo trazer em 15 minutos, com um exemplo do nosso próprio sistema. Quando seria melhor?”'],
+ ['“Isso é com a equipe de infra.”','“Parte é, sim. Queria entender a parte que é decisão da aplicação — fila, idempotência, criptografia — para saber onde eu posso ajudar.”'],
+ ['“Sempre funcionou assim.”','“Funcionou bem até aqui. Fiquei curioso como se comportaria num pico de 10× — temos dados de algum evento passado?”'],
+ ['“Foca na sua tarefa.”','“Claro. Posso registrar o que observei em uma página e você decide se vale aprofundar depois.”']
+];
+const MSG0 = 'Oi! Na faculdade estudamos um modelo de maturidade para disponibilidade e segurança (malha aberta × malha fechada). Fiquei curioso sobre como isso funciona aqui. Posso te mostrar um resumo de uma página e fazer três perguntas, em 15 minutos, quando for bom para você?';
+
+/* ===================== ESTADO ===================== */
+const $ = s=>document.querySelector(s);
+const esc = v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = (n,d=0)=>Number(n||0).toLocaleString('pt-BR',{maximumFractionDigits:d,minimumFractionDigits:d});
+const clone = o=>JSON.parse(JSON.stringify(o));
+const SECS = ['arq','priv','sim','ficha'];
+function defaults(g){
+  const c=GROUPS[g].caso;
+  const inc={};INC.forEach(i=>inc[i.id]={on:['i1','i2'].includes(i.id),t:i.def});
+  if(GROUPS[g].foco==='I'){inc.i3.on=true;}
+  if(GROUPS[g].foco==='C'){inc.i6.on=true;inc.i5.on=true;}
+  if(GROUPS[g].foco==='X'){inc.i4.on=true;inc.i5.on=true;}
+  const f={};['C','I','A'].forEach(a=>f[a]={fonte:'',estimulo:'',artefato:'',ambiente:'',resposta:'',medida:'',atual:'2',alvo:'3',adr:''});
+  return {arq:{caso:c,tat:{}},priv:{nivel:0},sim:{p:clone(CASES[c].p),inc,res:null},ficha:f};
+}
+let grp='g1';
+try{const s=localStorage.getItem('cia_grp');if(s&&GROUPS[s])grp=s;}catch(e){}
+let S = defaults(grp);
+const remote = {g1:{},g2:{},g3:{},g4:{},g5:{}};
+let mural = [];
+let db=null, user=null, owner=false;
+const lastLocal={}, timers={}, inflight={}, again={};
+let attrSel='A', d2sel=new Set([0,1,2]), d2ctx='Estágio', d2obj=0;
+
+/* ===================== NÍVEL EFETIVO ===================== */
+function eff(tier,tat){
+  let L=1;
+  for(const k of [2,3,4]){ if(TAT[tier][k].every(([id])=>tat[id])) L=k; else break; }
+  return L;
+}
+function missing(tier,tat){
+  const L=eff(tier,tat); if(L===4) return null;
+  return {L:L+1,f:TAT[tier][L+1].filter(([id])=>!tat[id]).map(x=>x[1])};
+}
+const effAll = tat=>({ihc:eff('ihc',tat),ln:eff('ln',tat),ac:eff('ac',tat)});
+
+/* ===================== SIMULAÇÃO (modelo didático) ===================== */
+function simulate(st){
+  const p=st.sim.p, cs=CASES[st.arq.caso], tat=st.arq.tat, E=effAll(tat), P=st.priv.nivel;
+  const B=p.B, M=p.M;
+  const dem=t=>{
+    if(p.forma==='rajada'){
+      if(t<p.t0-5) return B;
+      if(t<p.t0) return B+(B*(M-1))*((t-(p.t0-5))/5)*.3;
+      return B+B*(M-1)*Math.exp(-(t-p.t0)/(p.dur/3));
+    }
+    if(t<p.t0) return B;
+    if(t<p.t0+p.dur){const r=Math.min(1,(t-p.t0)/15);return B+(B*M*(0.93+0.07*Math.sin((t-p.t0)/9))-B)*r;}
+    return B+(B*M-B)*Math.exp(-(t-p.t0-p.dur)/15);
+  };
+  const capT=(L,t)=>{
+    if(L===1) return 1.3*B;
+    if(L===2) return 2.5*B;
+    if(L===3) return Math.min(30*B,Math.max(2.5*B,dem(Math.max(0,t-8))*1.25));
+    return Math.min(80*B,Math.max(2.5*B,dem(t+5)*1.3));
+  };
+  // janelas de incidente
+  const act=[], ev=[];
+  INC.forEach(I=>{
+    const o=st.sim.inc[I.id]; if(!o||!o.on) return;
+    const L=E[I.tier], d=I.d[L-1], r=I.r[L-1];
+    act.push({I,L,a:o.t,b:o.t+d+r,d,r});
+  });
+  const series=[]; let Q=0, collapseSaid=false;
+  const m={indisp:0,degr:0,perd:0,atend:0,inco:0,incoAuto:0,dup:0,botsBuy:0,expostos:0,takeovers:0,excl:0,rpo:''};
+  let prevD=dem(0);
+  for(let t=0;t<H;t++){
+    let Dh=dem(t);
+    let Db=0, f=1, secInc=false, pagInc=false, wifi=false;
+    act.forEach(x=>{
+      if(t<x.a||t>=x.b) return;
+      const L=x.L;
+      if(x.I.id==='i4'){secInc=true; if(t<x.a+30) Db=B*p.bots*[1,1,.3,.03][E.ihc-1];}
+      else if(x.I.id==='i3'){pagInc=true; if(t<x.a+30) f*=x.I.f[E.ln-1];}
+      else if(x.I.id==='i6'){wifi=true;}
+      else { if(x.I.id==='i5') secInc=true; f*=x.I.f[L-1]; }
+    });
+    if(E.ihc>=4 && Dh>capT(E.ihc,t)) Dh*=0.8; // degradação graciosa: corta tráfego não crítico
+    const D=Dh+Db;
+    let cap=Math.min(capT(E.ihc,t),capT(E.ln,t),capT(E.ac,t))*f;
+    if(D>cap*1.3 && E.ln<3 && f>0){cap*=0.5; if(!collapseSaid){collapseSaid=true;ev.push([t,'bad',`Sobrecarga sem fila/circuit breaker: threads presas e deadlocks — a capacidade cai pela metade (efeito avalanche).`]);}}
+    let served, failed=0, aband=0, status='ok';
+    if(E.ihc>=3){
+      const want=D+Q; served=Math.min(want,cap); Q=want-served; aband=Q*0.08; Q-=aband;
+      const wait=cap>0?Q/cap:99;
+      if(cap<0.1*B) status='down'; else if(wait>15) status='degr';
+    } else {
+      served=Math.min(D,cap); failed=D-served;
+      const r=D>0?served/D:1;
+      if(r<0.5) status='down'; else if(r<0.9) status='degr';
+    }
+    const hs=D>0?Dh/D:1;
+    const human=served*hs;
+    m.atend+=human; m.perd+=failed*hs+aband*hs;
+    if(Db>0 && st.arq.caso==='ingressos') m.botsBuy+=served*(1-hs)*0.5;
+    const over=Math.max(0,D/Math.max(cap,1)-1);
+    const Lc=Math.min(E.ln,E.ac);
+    const ir=[0.004,0.002,0.0002,0.00002][Lc-1]*(1+over);
+    if(Lc>=4) m.incoAuto+=human*ir; else m.inco+=human*ir;
+    if(pagInc && E.ln<3) m.dup+=human*0.04;
+    if(wifi) m.expostos+= P===0? human*0.05 : 0;
+    if(status==='down'){m.indisp++; if(secInc) m.excl++;}
+    if(status==='degr') m.degr++;
+    series.push({t,D,Dh,cap,served,status});
+    prevD=D;
+  }
+  // eventos narrativos e métricas de C
+  let sd=0,sr=0,n=0;
+  act.forEach(x=>{
+    const I=x.I, L=x.L;
+    if(I.id==='i6'){
+      ev.push([x.a, P===0?'bad':'good', P===0?`${I.nome}: sem TLS, quem está na mesma rede lê CPF e cartão das transações.`:`${I.nome}: o tráfego está cifrado (P${P}); nada legível foi capturado.`]);
+      return;
+    }
+    n++; sd+=x.d; sr+=x.r;
+    ev.push([x.a,'inc',`${I.nome} (camada ${I.tier.toUpperCase()}, ${LVN[L]}).`]);
+    ev.push([x.a+x.d,L>=4?'good':L===3?'warn':'bad',`Detectado em ${fmt(x.d,1)} min por ${QUEM[L]}. ${I.como[L-1]}.`]);
+    const fim=x.b; ev.push([Math.min(fim,H-1),L>=3?'good':'bad',fim>H?`Ainda não recuperado ao fim da janela (${fmt(x.r)} min de recuperação).`:`Recuperado após ${fmt(x.r,1)} min.`]);
+    if(I.id==='i4'){
+      m.takeovers=p.tent*[0.01,0.008,0.002,0.0001][E.ihc-1];
+      const per=P>=4?0:1; m.expostos+=m.takeovers*per;
+    }
+    if(I.id==='i5'){
+      const ex=p.clientes*[1,1,0,0,0][P];
+      m.expostos+=ex;
+      m.rpo=['tudo (sem backup útil)','até 24 h de pedidos','até 1 h de pedidos','zero (point-in-time)'][E.ac-1];
+      ev.push([x.a+x.d,P>=2?'good':'bad',P>=2?`Malware copiou o banco, mas os dados estão cifrados com chave fora do servidor (P${P}).`:`Malware copiou o banco em texto claro: ${fmt(ex)} cadastros expostos.`]);
+    }
+  });
+  ev.sort((a,b)=>a[0]-b[0]);
+  const budget=(1-cs.sla/100)*43200;
+  const custo=Object.keys(tat).filter(k=>tat[k]).reduce((s,k)=>{for(const T of ['ihc','ln','ac'])for(const L of [2,3,4])if(TAT[T][L].some(x=>x[0]===k))return s+(L-1);return s;},0)+P*2;
+  const res={
+    disp:100*(1-m.indisp/H), mes:100*(1-m.indisp/43200), indisp:m.indisp, degr:m.degr, budget, budgetPct:100*m.indisp/budget,
+    perd:Math.round(m.perd), atend:Math.round(m.atend), receita:Math.round(m.perd*p.ticket),
+    inco:Math.round(m.inco+m.dup), incoAuto:Math.round(m.incoAuto), botsBuy:Math.round(m.botsBuy),
+    expostos:Math.round(m.expostos), takeovers:Math.round(m.takeovers), excl:m.excl, rpo:m.rpo,
+    mttd:n?sd/n:0, mttr:n?sr/n:0, custo, E, P
+  };
+  return {series,ev,res};
+}
+
+/* ===================== PERSISTÊNCIA ===================== */
+function setSync(s,t){ $('#syncDot').className='dot '+s; $('#syncTxt').textContent=t; }
+function touch(sec){ lastLocal[sec]=Date.now(); clearTimeout(timers[sec]); timers[sec]=setTimeout(()=>flush(sec,grp),900); }
+async function flush(sec,g){
+  clearTimeout(timers[sec]); timers[sec]=null;
+  if(!db) return;
+  if(inflight[sec]){again[sec]=g;return;}
+  inflight[sec]=true; setSync('wait','salvando…');
+  try{ await db.doc(`grupos/${g}/secoes/${sec}`).set(Object.assign(clone(S[sec]),{_ts:Date.now()})); setSync('on','salvo · compartilhado'); }
+  catch(e){ setSync('', e&&e.code==='invalid_argument'?'somente leitura':'erro ao salvar'); }
+  inflight[sec]=false;
+  if(again[sec]){const g2=again[sec];again[sec]=null;flush(sec,g2);}
+}
+function flushAll(){ SECS.forEach(s=>{ if(timers[s]) flush(s,grp); }); }
+function merge(sec,data){
+  const d=defaults(grp)[sec]; const o=Object.assign(d,clone(data||{})); delete o._ts;
+  if(sec==='sim'){o.p=Object.assign(clone((CASES[S.arq.caso]||CASES[GROUPS[grp].caso]).p),o.p||{}); o.inc=Object.assign(defaults(grp).sim.inc,o.inc||{});}
+  if(sec==='ficha'){['C','I','A'].forEach(a=>o[a]=Object.assign(defaults(grp).ficha[a],o[a]||{}));}
+  if(sec==='arq'){o.tat=o.tat||{}; if(!CASES[o.caso]) o.caso=GROUPS[grp].caso;}
+  if(sec==='priv'){o.nivel=Math.max(0,Math.min(4,Number(o.nivel)||0));}
+  return o;
+}
+function loadGroupFromRemote(){
+  const r=remote[grp]; S=defaults(grp);
+  SECS.forEach(s=>{ if(r[s]) S[s]=merge(s,r[s]); });
+}
+function editingText(){ const a=document.activeElement; return a && a.closest && a.closest('main') && (a.tagName==='TEXTAREA'||(a.tagName==='INPUT'&&a.type==='text')); }
+function onRemote(g,snap){
+  snap.docs.forEach(d=>{ remote[g][d.id]=d.data(); });
+  if(g===grp){
+    let ch=false;
+    SECS.forEach(s=>{ const r=remote[g][s]; if(!r) return; if(timers[s]||inflight[s]||Date.now()-(lastLocal[s]||0)<3000) return;
+      const nx=merge(s,r); if(JSON.stringify(nx)!==JSON.stringify(S[s])){S[s]=nx;ch=true;} });
+    if(ch && !editingText()) renderCurrent();
+  }
+  if(cur==='painel') renderPainel();
+}
+async function connect(){
+  const timer=setTimeout(()=>{ if(!db) setSync('','modo local (sem dados compartilhados)'); },10000);
+  try{ db = window.claude && claude.use ? await claude.use('db') : null; }catch(e){ db=null; }
+  try{ user = window.claude && claude.use ? await claude.use('user') : null; owner = user ? !!(await user.isOwner()) : false; }catch(e){ owner=false; }
+  if(!db){ clearTimeout(timer); setSync('','modo local (sem dados compartilhados)'); return; }
+  setSync('wait','sincronizando…');
+  let first=true;
+  Object.keys(GROUPS).forEach(g=>{
+    db.collection(`grupos/${g}/secoes`).onSnapshot(s=>{ if(first&&!s.metadata.fromCache){first=false;clearTimeout(timer);setSync('on','conectado · compartilhado');} onRemote(g,s); },
+      e=>{ setSync('','sem conexão com os dados'); });
+  });
+  db.collection('conversas').orderBy('ts','desc').limit(200).onSnapshot(s=>{ mural=s.docs.map(d=>({id:d.id,...d.data()})); if(cur==='supervisor')renderMural(); if(cur==='painel')renderPainel(); }, ()=>{});
+  if(cur==='painel') renderPainel();
+}
+
+/* ===================== VIEWS ===================== */
+let cur='aula';
+const views=['aula','caso','arquitetura','privacidade','simulador','ficha','supervisor','painel'];
+function route(){
+  const h=(location.hash||'#aula').slice(1); cur=views.includes(h)?h:'aula';
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+cur));
+  document.querySelectorAll('#tabs a').forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+cur));
+  renderCurrent(); window.scrollTo(0,0);
+}
+function renderCurrent(){ ({aula:renderAula,caso:renderCaso,arquitetura:renderArq,privacidade:renderPriv,simulador:renderSim,ficha:renderFicha,supervisor:renderSup,painel:renderPainel})[cur](); }
+const G=()=>GROUPS[grp], C=()=>CASES[S.arq.caso];
+const lvTag=L=>`<span class="tag L${L}">N${L}</span>`;
+
+function renderAula(){
+  const rows=[
+   ['0–20','Conceitos','Cards 1–6: 3-tier como referência, escada N1–N4, táticas de segurança e de disponibilidade, janelas cibernéticas. Pergunta-guia: “quem controla a operação em cada nível?”'],
+   ['20–25','Briefing da Dinâmica 1','Cada grupo abre <b>1 · Caso</b>, clica em “Restaurar valores do caso” no <b>4 · Simulador</b> e fixa os incidentes. A partir daqui, demanda e incidentes não mudam: só a arquitetura.'],
+   ['25–32','R1 · N1 + P0','Nenhuma tática marcada, privacidade P0. Print do simulador. Anotar quem detectou cada incidente, minutos fora e o efeito avalanche.'],
+   ['32–40','R2 · N2 + P1','Marcar as 6 táticas de N2 em <b>2 · Arquitetura</b>; P1 em <b>3 · Privacidade</b>. Print. O que N2 melhorou no suporte e não na arquitetura?'],
+   ['40–50','R3 · N3 + P2','Marcar as 12 táticas de N3; P2. Print. Listar onde um humano ainda precisa agir: são os candidatos a ADR.'],
+   ['50–70','R4 · N4 e ADRs','Escolher, camada por camada, o que levar a N4 (uma tática por vez) e decidir entre P3 e P4. Print final, 3 a 5 ADRs com “o que pagamos” e a <b>5 · Ficha</b>.'],
+   ['70–80','Pitch','2 min por grupo, com o <b>Painel</b> projetado: o antes e depois de N1 a N4, os ADRs e seus trade-offs.'],
+   ['80–100','Dinâmica 2 · o supervisor','Aba <b>6 · Supervisor</b>: role-play em duplas cruzadas (3 rodadas de 5 min) e publicação no mural.'],
+   ['100–110','Consolidação','Painel comparativo + provocação: “seu SLA protege o cliente ou o fornecedor?”']
+  ];
+  $('#v-aula').innerHTML=`
+  <h1>Especificação CIA por maturidade</h1>
+  <p class="lede">Aula de 90 a 110 minutos. Os grupos sobem a arquitetura de um caso real de N1 a N4, em 4 rodadas com prints e planilha de evidências, e veem a diferença entre controlar CIA em malha aberta (N3) e em malha fechada (N4). Tudo o que cada grupo preenche fica salvo e aparece no Painel.</p>
+  <div class="grid g2">
+   <div class="box"><h3>Roteiro (minutos)</h3><div class="tl">${rows.map(r=>`<div class="tlr"><b class="t">${r[0]}</b><div><div class="bk">${r[1]}</div><div class="mute">${r[2]}</div></div></div>`).join('')}</div></div>
+   <div>
+    <div class="box"><h3>Grupos e casos</h3><div class="scroll"><table class="stack"><thead><tr><th>Grupo</th><th>Caso</th><th>Foco</th></tr></thead><tbody>
+    ${Object.entries(GROUPS).map(([g,o])=>`<tr><td><b>${g.toUpperCase()}</b></td><td>${o.livre?'Ingressos ou Black Friday (à escolha)':CASES[o.caso].curto}</td><td>${FOCO[o.foco]} — ${o.titulo}</td></tr>`).join('')}
+    </tbody></table></div></div>
+    <div class="soft" style="margin-top:14px"><h3>Material de apoio</h3>
+     <p class="small">Roteiro das rodadas N1→N4 (documento para as equipes, com catálogo de trade-offs, modelo de ADR e barema).</p>
+     <p class="small">Cards: 01 3-tier · 02 escala N1–N4 · 03 matriz camada × maturidade · 04 tática de segurança · 05 tática de disponibilidade · 06 janelas cibernéticas · 07 cenário de qualidade.</p>
+     <p class="small">Autoestudos da semana 7: Software malicioso · Criptografia simétrica · Ferramentas de segurança. Especificação de disponibilidade de e-commerce (99,9%).</p>
+     <p class="small mute">O simulador é um modelo didático: fórmulas simples, determinísticas e explicáveis, não uma previsão de sistemas reais.</p></div>
+   </div>
+  </div>`;
+}
+
+function renderCaso(){
+  const g=G(), c=C();
+  $('#v-caso').innerHTML=`
+  <div class="levels"><span class="tag ${g.foco==='X'?'L1':'t'+g.foco}">${grp.toUpperCase()} · ${FOCO[g.foco]}</span></div>
+  <h1>${esc(c.nome)}</h1>
+  <p class="lede">${esc(c.ctx)}</p>
+  ${g.livre?`<div class="box" style="margin-bottom:14px"><label for="casoSel"><b>O G5 escolhe o caso:</b></label> <select id="casoSel" data-act="caso">${Object.entries(CASES).map(([k,v])=>`<option value="${k}" ${S.arq.caso===k?'selected':''}>${esc(v.curto)}</option>`).join('')}</select> <span class="small mute">Trocar o caso reinicia os parâmetros do simulador.</span></div>`:''}
+  <div class="grid g2">
+   <div class="box"><h3>Desafio do grupo</h3><p><b>${esc(g.titulo)}</b></p>
+    <p>Meta de disponibilidade: <b>${fmt(c.sla,1)}%</b> ao mês, ou seja, até <b>${fmt((1-c.sla/100)*43200)} min</b> de indisponibilidade no mês.</p>
+    <p class="small mute">Disponível = HTTPS respondendo, páginas principais acessíveis, carrinho funcional, checkout concluído e autenticação operando (especificação de e-commerce).</p>
+    <h3 style="margin-top:14px">Entregas</h3>
+    <ol class="small"><li>Arquitetura nas 3 camadas, com nível declarado e nível efetivo</li><li>Nível de privacidade P0–P4 justificado</li><li>Prints e planilha de evidências das 4 rodadas (N1 → N4)</li><li>3 a 5 ADRs com o trade-off de cada mecanismo e a Ficha com 3 cenários (C, I, A)</li></ol></div>
+   <div class="box"><h3>Números do negócio</h3><table><tbody>${c.neg.map(r=>`<tr><td>${esc(r[0])}</td><td class="num"><b>${esc(r[1])}</b></td></tr>`).join('')}</tbody></table>
+    <p class="small mute" style="margin-top:8px">Números de exemplo para a dinâmica.</p></div>
+  </div>`;
+}
+
+function renderArq(){
+  const tat=S.arq.tat, E=effAll(tat);
+  $('#v-arquitetura').innerHTML=`
+  <h1>Arquitetura nas três camadas</h1>
+  <p class="lede">Marque as táticas que o grupo realmente implementaria. O <b>nível efetivo</b> de cada camada é o maior nível cujas táticas estão todas presentes (e as dos níveis abaixo também). Declarar N4 sem as táticas não conta. O simulador usa o nível efetivo.</p>
+  <div class="grid g3">${TIERS.map(T=>{
+    const L=E[T.id], mi=missing(T.id,tat);
+    return `<div class="tier ${T.id}"><div class="tierhd"><h3>${T.nome}</h3>${lvTag(L)}</div><div class="small mute">${T.sub}</div>
+    <div class="tg">${[2,3,4].map(k=>`<h4>${lvTag(k)} ${LVN[k].split('·')[1]}</h4>${TAT[T.id][k].map(([id,nm])=>`<label class="chk"><input type="checkbox" data-tat="${id}" ${tat[id]?'checked':''}><span>${nm}</span></label>`).join('')}`).join('')}</div>
+    <div class="eff ${mi?'gap':''}">Nível efetivo: <b>${LVN[L]}</b>${mi?`<br><span class="small">Para chegar a N${mi.L} falta: ${mi.f.map(esc).join('; ')}</span>`:'<br><span class="small">Malha fechada nesta camada.</span>'}</div></div>`;}).join('')}
+  </div>
+  <div class="soft" style="margin-top:16px"><b>Lembrete do ADR:</b> para cada subida de nível, uma linha: <i>“Decidimos X porque Y; o custo é Z.”</i> Ex.: “Adotamos fila virtual na IHC porque o pico é 50× em 10 min; o custo é a espera do usuário e o serviço de fila.”</div>`;
+}
+
+function renderPriv(){
+  const P=S.priv.nivel;
+  $('#v-privacidade').innerHTML=`
+  <h1>Confidencialidade e privacidade: do dado aberto ao fluxo cifrado</h1>
+  <p class="lede">Escolha o nível do grupo e acompanhe um pedido real passando pelas camadas. Vermelho é legível por quem interceptar ou copiar; azul está cifrado; verde nem chega a existir no sistema.</p>
+  <div class="ladder">${PRIV.map((x,i)=>`<button class="rung ${i===P?'on':''}" data-priv="${i}"><b>${x.n} · ${x.t}</b><span class="small">${x.d}</span><br><span class="small mute">${x.fonte}</span></button>`).join('')}</div>
+  <div class="hops">${hops(P).map(h=>`<div class="hop"><div><b>${h.h}</b><div class="small mute">${h.c}</div></div><code>${esc(h.txt)}</code><span class="st ${h.st}">${{aberto:'LEGÍVEL',cifrado:'CIFRADO',token:'TOKENIZADO',parcial:'PARCIAL'}[h.st]}</span></div>`).join('')}</div>
+  <p class="small mute">CPF e cartão de exemplo (o cartão é um número de teste).</p>
+  <div class="grid g2" style="margin-top:18px">
+   <div class="box"><h3>Ameaças · Autoestudo 2 (software malicioso)</h3><div class="scroll"><table class="stack"><thead><tr><th>Tipo</th><th>O que faz</th><th>O que segura</th></tr></thead><tbody>${MALW.map(r=>`<tr><td><b>${r[0]}</b></td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('')}</tbody></table></div></div>
+   <div class="box"><h3>Ferramentas · Autoestudo 5</h3><table><tbody>${TOOLS.map(r=>`<tr><td><b>${r[0]}</b></td><td>${r[1]}</td></tr>`).join('')}</tbody></table>
+   <p class="small mute">Ferramentas de pentest só se usam com autorização, em ambiente próprio ou contratado.</p></div>
+  </div>`;
+}
+
+function renderSim(){
+  const p=S.sim.p, c=C();
+  const sl=(k,lab,min,max,step,unit='')=>`<label for="p_${k}">${lab}<span class="v" id="v_${k}">${fmt(p[k])}${unit}</span></label><input type="range" id="p_${k}" data-p="${k}" min="${min}" max="${max}" step="${step}" value="${p[k]}">`;
+  $('#v-simulador').innerHTML=`
+  <h1>Simulador de demanda e incidentes</h1>
+  <p class="lede">${esc(c.nome)} · ${H} minutos simulados · meta ${fmt(c.sla,1)}%. Mude a arquitetura nas abas 2 e 3 e veja o efeito aqui.</p>
+  <div class="simwrap">
+   <div class="box ctl">
+    <h3>Demanda</h3>
+    ${sl('B','Pedidos/min normais',100,3000,50)}
+    ${sl('M','Pico (× normal)',2,80,1,'×')}
+    ${sl('t0','Início do pico (min)',0,120,5)}
+    ${sl('dur','Duração do pico (min)',10,200,5)}
+    <label for="p_forma">Forma do pico</label><select id="p_forma" data-pf="1" style="width:100%"><option value="rajada" ${p.forma==='rajada'?'selected':''}>Rajada (abertura de vendas)</option><option value="plato" ${p.forma==='plato'?'selected':''}>Platô (horas de pico)</option></select>
+    ${sl('bots','Bots (× demanda normal)',0,50,1,'×')}
+    ${sl('tent','Tentativas de credential stuffing',0,500000,10000)}
+    <h3 style="margin-top:16px">Incidentes</h3>
+    ${INC.map(I=>{const o=S.sim.inc[I.id];return `<div class="inc"><label class="chk"><input type="checkbox" data-inc="${I.id}" ${o.on?'checked':''}><span><span class="tag t${I.attr}">${I.attr}</span> ${I.nome}</span></label>
+     <label for="it_${I.id}" class="small">Começa no minuto<span class="v" id="vt_${I.id}">${o.t}</span></label><input type="range" id="it_${I.id}" data-inct="${I.id}" min="0" max="${H-10}" step="1" value="${o.t}"></div>`;}).join('')}
+    <button data-act="resetsim" style="margin-top:10px;width:100%">Restaurar valores do caso</button>
+   </div>
+   <div id="simOut"></div>
+  </div>`;
+  renderSimOut();
+}
+let lastSim=null, simSaveT=null;
+function renderSimOut(save){
+  const out=$('#simOut'); if(!out) return;
+  const r=simulate(S); lastSim=r; const x=r.res, c=C();
+  const ok=x.indisp<=x.budget;
+  out.innerHTML=`
+   <div class="levels">${TIERS.map(T=>`<span class="small"><b>${T.id.toUpperCase()}</b> ${lvTag(x.E[T.id])}</span>`).join('')}<span class="small"><b>Privacidade</b> <span class="tag tC">P${x.P}</span></span></div>
+   <div class="kpis">
+    <div class="kpi ${ok?'good':'bad'}"><b>${fmt(x.indisp)} min</b><span>fora do ar · orçamento do mês ${fmt(x.budget)} min (${fmt(x.budgetPct)}% usado)</span></div>
+    <div class="kpi ${x.mes>=c.sla?'good':'bad'}"><b>${fmt(x.mes,2)}%</b><span>disponibilidade do mês se o resto dele fosse perfeito · meta ${fmt(c.sla,1)}%</span></div>
+    <div class="kpi ${x.perd>0?'warn':'good'}"><b>${fmt(x.perd)}</b><span>pedidos perdidos · R$ ${fmt(x.receita)}</span></div>
+    <div class="kpi ${x.inco>0?'bad':'good'}"><b>${fmt(x.inco)}</b><span>${esc(c.inco)}${x.incoAuto?` · ${fmt(x.incoAuto)} corrigidos automaticamente`:''}</span></div>
+    <div class="kpi ${x.expostos>0?'bad':'good'}"><b>${fmt(x.expostos)}</b><span>registros pessoais expostos${x.takeovers?` · ${fmt(x.takeovers)} contas invadidas`:''}</span></div>
+    <div class="kpi"><b>${fmt(x.mttd,1)} / ${fmt(x.mttr,1)}</b><span>MTTD / MTTR médios (min)</span></div>
+    ${x.botsBuy?`<div class="kpi warn"><b>${fmt(x.botsBuy)}</b><span>ingressos comprados por bots</span></div>`:''}
+    ${x.rpo?`<div class="kpi"><b style="font-size:18px;white-space:normal">${esc(x.rpo)}</b><span>dados perdidos no ransomware (RPO)</span></div>`:''}
+    <div class="kpi"><b>${fmt(x.custo)}</b><span>custo relativo das táticas</span></div>
+   </div>
+   <div class="fig" id="fig"><svg id="chart" role="img" aria-label="Demanda, capacidade e atendimento por minuto"></svg></div>
+   <div class="legend"><span><i style="background:#8a909b"></i>demanda</span><span><i style="background:var(--ac)"></i>capacidade</span><span><i style="background:var(--ok)"></i>atendido</span><span><i style="background:rgba(198,40,40,.35)"></i>período com problema</span><span>régua: <i style="background:var(--ok)"></i>ok <i style="background:var(--warn)"></i>degradado <i style="background:var(--bad)"></i>fora</span></div>
+   ${x.excl?`<div class="prov small"><b>Provocação:</b> ${fmt(x.excl)} dos ${fmt(x.indisp)} minutos fora aconteceram durante incidentes de segurança. Pela especificação de e-commerce, eles <b>não contam</b> no SLA. O cliente concorda?</div>`:''}
+   <div class="box" style="margin-top:14px"><h3>Linha do tempo</h3><ul class="log">${r.ev.length?r.ev.map(e=>`<li><b>t=${fmt(e[0],0)}</b> <span style="color:${e[1]==='bad'?'var(--bad)':e[1]==='good'?'var(--ok)':e[1]==='warn'?'var(--warn)':'var(--ink)'}">${esc(e[2])}</span></li>`).join(''):'<li class="mute">Nenhum incidente ligado.</li>'}</ul></div>`;
+  chartObs();
+  const changed=JSON.stringify(x)!==JSON.stringify(S.sim.res);
+  S.sim.res=x;
+  if(changed||save===true){ clearTimeout(simSaveT); simSaveT=setTimeout(()=>touch('sim'),300); }
+}
+function recompute(){ const x=simulate(S).res; if(JSON.stringify(x)!==JSON.stringify(S.sim.res)){ S.sim.res=x; touch('sim'); } }
+let ro=null;
+function chartObs(){ const f=$('#fig'); if(!f) return; if(ro) ro.disconnect(); ro=new ResizeObserver(drawChart); ro.observe(f); drawChart(); }
+function drawChart(){
+  const s=$('#chart'); if(!s||!lastSim) return;
+  const W=s.clientWidth, Hh=s.clientHeight; if(!W||!Hh) return;
+  const pad={l:52,r:14,t:24,b:44}, w=W-pad.l-pad.r, h=Hh-pad.t-pad.b;
+  const se=lastSim.series; const ymax=Math.max(...se.map(d=>Math.max(d.D,Math.min(d.cap,d.D*1.6))))*1.08||1;
+  const X=t=>pad.l+t/(H-1)*w, Y=v=>pad.t+h-Math.min(v,ymax)/ymax*h;
+  const line=k=>se.map((d,i)=>`${i?'L':'M'}${X(d.t).toFixed(1)},${Y(d[k]).toFixed(1)}`).join('');
+  const bands=[]; let a=null;
+  se.forEach(d=>{ const on=d.status!=='ok'; if(on&&a===null)a=d.t; if((!on||d.t===H-1)&&a!==null){bands.push([a,on?d.t:d.t-1]);a=null;} });
+  const yt=[0,.25,.5,.75,1].map(f=>f*ymax);
+  const sm=W<520;
+  s.innerHTML=`
+   ${yt.map(v=>`<line x1="${pad.l}" x2="${W-pad.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="currentColor" opacity=".1"/>${sm?'':`<text x="${pad.l-6}" y="${Y(v)+4}" text-anchor="end" font-size="11" fill="currentColor" opacity=".6">${fmt(v)}</text>`}`).join('')}
+   ${bands.map(b=>`<rect x="${X(b[0])}" y="${pad.t}" width="${Math.max(2,X(b[1])-X(b[0]))}" height="${h}" fill="rgba(198,40,40,.13)"/>`).join('')}
+   <path d="${line('D')}" fill="none" stroke="#8a909b" stroke-width="2"/>
+   <path d="${line('cap')}" fill="none" stroke="var(--ac)" stroke-width="2" stroke-dasharray="5 4"/>
+   <path d="${line('served')}" fill="none" stroke="var(--ok)" stroke-width="2.5"/>
+   ${se.map(d=>`<rect x="${X(d.t)}" y="${pad.t+h+8}" width="${w/H+.6}" height="10" fill="${d.status==='ok'?'var(--ok)':d.status==='degr'?'var(--warn)':'var(--bad)'}"/>`).join('')}
+   ${[0,60,120,180,239].map(t=>`<text x="${X(t)}" y="${Hh-6}" text-anchor="${t===0?'start':t===239?'end':'middle'}" font-size="11" fill="currentColor" opacity=".6">${t} min</text>`).join('')}
+   <text x="${pad.l-6}" y="12" text-anchor="end" font-size="11" fill="currentColor" opacity=".6">${sm?'':'pedidos/min'}</text>`;
+}
+
+function renderFicha(){
+  const f=S.ficha[attrSel];
+  const A={C:'Confidencialidade / Privacidade',I:'Integridade',A:'Disponibilidade'};
+  const fld=(k,lab,ph)=>`<label for="f_${k}">${lab}</label><input type="text" id="f_${k}" data-f="${k}" value="${esc(f[k])}" placeholder="${esc(ph)}">`;
+  $('#v-ficha').innerHTML=`
+  <h1>Ficha de especificação · cenário de qualidade</h1>
+  <p class="lede">Um cenário por atributo, no modelo de 6 partes (card 7). Acrescente o nível atual, o nível-alvo e o ADR que faz a transição.</p>
+  <div class="attrtabs">${['C','I','A'].map(a=>`<button data-attr="${a}" class="${a===attrSel?'on':''}">${a} · ${A[a]}</button>`).join('')}</div>
+  <div class="box"><div class="fc">
+   ${fld('fonte','Fonte','quem ou o que gera o evento')}
+   ${fld('estimulo','Estímulo','o evento')}
+   ${fld('artefato','Artefato','camada 3-tier e componente')}
+   ${fld('ambiente','Ambiente','condição de operação')}
+   <label for="f_resposta">Resposta</label><textarea id="f_resposta" data-f="resposta" placeholder="táticas acionadas, em ordem">${esc(f.resposta)}</textarea>
+   ${fld('medida','Medida','como verificar (MTTD, RTO, RPO, registros expostos…)')}
+   <label for="f_atual">Nível atual → alvo</label><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><select id="f_atual" data-f="atual">${[1,2,3,4].map(l=>`<option value="${l}" ${String(f.atual)===String(l)?'selected':''}>N${l}</option>`).join('')}</select> → <select data-f="alvo" aria-label="Nível-alvo">${[1,2,3,4].map(l=>`<option value="${l}" ${String(f.alvo)===String(l)?'selected':''}>N${l}</option>`).join('')}</select></div>
+   <label for="f_adr">ADR</label><textarea id="f_adr" data-f="adr" placeholder="Decidimos X porque Y; o custo é Z.">${esc(f.adr)}</textarea>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button data-act="prefill">Preencher com a simulação</button><button data-act="copymd">Copiar ficha (Markdown)</button><button data-act="dlmd" id="dlBtn" hidden>Baixar .md</button></div></div>`;
+  claudeDl().then(d=>{ const b=$('#dlBtn'); if(b&&d) b.hidden=false; });
+}
+function prefill(){
+  const r=lastSim?lastSim.res:simulate(S).res, E=r.E, c=C(), a=attrSel, f=S.ficha[a];
+  if(a==='A'){ Object.assign(f,{fonte:'Falha de infraestrutura no banco primário',estimulo:'O nó deixa de responder ao heartbeat',artefato:'ACESSO · base transacional de pedidos',ambiente:`Produção, durante o pico (${fmt(S.sim.p.M)}× a demanda normal)`,
+    resposta:E.ac>=4?'Redundância ativa assume; votação descarta o nó falho; o controlador registra e avisa':E.ac>=3?'Alerta de heartbeat → operador promove o standby (redundância passiva) com ressincronismo':'Cliente reclama → suporte abre chamado → restauração manual do backup',
+    medida:`${fmt(r.indisp)} min fora na janela (orçamento ${fmt(r.budget)} min/mês) · MTTD ${fmt(r.mttd,1)} min · MTTR ${fmt(r.mttr,1)} min`,atual:String(E.ac),alvo:String(Math.min(4,E.ac+1))}); }
+  if(a==='I'){ Object.assign(f,{fonte:'Gateway de pagamento externo instável',estimulo:'Timeouts e chamadas repetidas durante o pico',artefato:'LN · serviço de pedidos + ACESSO · integração externa',ambiente:'Produção, pico de vendas',
+    resposta:E.ln>=3?'Outbox guarda o pagamento; retry com backoff; idempotência impede duplicidade':'Checkout síncrono; cliente repete o clique; suporte trata cobranças duplicadas à mão',
+    medida:`${fmt(r.inco)} ${c.inco} · ${fmt(r.incoAuto)} corrigidos automaticamente`,atual:String(Math.min(E.ln,E.ac)),alvo:String(Math.min(4,Math.min(E.ln,E.ac)+1))}); }
+  if(a==='C'){ Object.assign(f,{fonte:'Atacante externo (botnet ou malware)',estimulo:'Credential stuffing em massa e tentativa de cópia do banco',artefato:'IHC · login e sessão + ACESSO · banco de clientes',ambiente:'Produção, durante a abertura das vendas',
+    resposta:`${E.ihc>=4?'Detecção comportamental + MFA step-up':E.ihc>=3?'Rate limit e WAF + alerta ao SOC':'Bloqueio manual de IPs após reclamações'}; dados em ${PRIV[S.priv.nivel].n} (${PRIV[S.priv.nivel].t})`,
+    medida:`${fmt(r.expostos)} registros expostos · ${fmt(r.takeovers)} contas invadidas`,atual:String(E.ihc),alvo:String(Math.min(4,E.ihc+1))}); }
+  touch('ficha'); renderFicha(); toast('Ficha preenchida com o resultado da simulação. Ajuste o texto.');
+}
+function fichaMd(){
+  const A={C:'Confidencialidade / Privacidade',I:'Integridade',A:'Disponibilidade'};
+  return `# Ficha CIA — ${grp.toUpperCase()} · ${C().curto}\n\n`+['C','I','A'].map(a=>{const f=S.ficha[a];return `## ${a} · ${A[a]}\n\n| Parte | Especificação |\n|---|---|\n| Fonte | ${f.fonte} |\n| Estímulo | ${f.estimulo} |\n| Artefato | ${f.artefato} |\n| Ambiente | ${f.ambiente} |\n| Resposta | ${f.resposta} |\n| Medida | ${f.medida} |\n| Nível | N${f.atual} → N${f.alvo} |\n| ADR | ${f.adr} |\n`;}).join('\n');
+}
+let dlp=null; function claudeDl(){ if(!dlp) dlp=(window.claude&&claude.use?claude.use('downloads'):Promise.resolve(null)).catch(()=>null); return dlp; }
+
+function renderSup(){
+  const r=remote[grp].sim?.res||lastSim?.res;
+  const msg = $('#d2msg')?.value ?? (r?MSG0.replace('Fiquei curioso',`Simulamos um pico em que a arquitetura ficou ${fmt(r.indisp)} minutos fora do ar. Fiquei curioso`):MSG0);
+  $('#v-supervisor').innerHTML=`
+  <h1>Levando o assunto ao seu supervisor</h1>
+  <p class="lede">Você é estagiário, júnior ou trainee. A ideia não é dizer que o sistema da empresa é “N1”: é fazer boas perguntas, trazer um dado e pedir um passo pequeno.</p>
+  <div class="grid g2">
+   <div class="box"><h3>Role-play em 3 rodadas (5 min cada)</h3>
+    <ol><li><b>Abordagem:</b> quem faz o estagiário puxa o assunto com uma das perguntas. Quem faz o supervisor está ocupado.</li>
+    <li><b>Objeção:</b> o supervisor usa uma das objeções abaixo; o estagiário responde.</li>
+    <li><b>Compromisso:</b> o estagiário pede um passo pequeno (15 min, uma página, um incidente para estudar). Depois invertem os papéis.</li></ol>
+    <h3 style="margin-top:12px">Cinco regras</h3>
+    <ul class="small"><li>Pergunte, não diagnostique.</li><li>Traga um dado ou um caso (o simulador ajuda).</li><li>Peça um passo pequeno.</li><li>Ofereça trabalho, não crítica.</li><li>Não leve dados da empresa para fora, nem para este site.</li></ul>
+    <h3 style="margin-top:12px">Objeções e respostas</h3>${OBJ.map(o=>`<div class="obj"><b>${o[0]}</b><br><span class="small">${o[1]}</span></div>`).join('')}
+   </div>
+   <div class="box"><h3>Monte a sua abordagem</h3>
+    <label for="d2ctx" class="small"><b>Seu contexto</b></label><br>
+    <select id="d2ctx">${['Estágio','Júnior','Trainee','Iniciante em outra área'].map(x=>`<option ${x===d2ctx?'selected':''}>${x}</option>`).join('')}</select>
+    <p class="small" style="margin-top:12px"><b>Escolha 3 perguntas</b> (${d2sel.size}/3)</p>
+    <div class="qlist">${QUEST.map((q,i)=>`<label class="chk"><input type="checkbox" data-q="${i}" ${d2sel.has(i)?'checked':''}><span>${esc(q)}</span></label>`).join('')}</div>
+    <label for="d2obj" class="small"><b>Objeção que você treinou</b></label><br><select id="d2obj" style="width:100%">${OBJ.map((o,i)=>`<option value="${i}" ${i===d2obj?'selected':''}>${esc(o[0])}</option>`).join('')}</select>
+    <label for="d2msg" class="small" style="display:block;margin-top:12px"><b>Mensagem curta ao supervisor</b></label>
+    <textarea id="d2msg" rows="5">${esc(msg)}</textarea>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="pri" data-act="pub">Publicar no mural</button><button data-act="copymsg">Copiar mensagem</button></div>
+    <p class="small mute">O mural mostra só o grupo e o contexto, sem nomes.</p>
+   </div>
+  </div>
+  <h2 style="margin-top:22px">Mural da turma</h2><div id="mural" class="mural"></div>`;
+  renderMural();
+}
+function renderMural(){
+  const m=$('#mural'); if(!m) return;
+  if(!db){ m.innerHTML='<p class="mute">O mural precisa da conexão com os dados compartilhados.</p>'; return; }
+  if(!mural.length){ m.innerHTML='<p class="mute">Nenhuma abordagem publicada ainda.</p>'; return; }
+  m.innerHTML=mural.map(n=>`<div class="note"><div class="meta">${esc(String(n.grupo||'').toUpperCase())} · ${esc(n.contexto)} · objeção: ${esc(OBJ[n.objecao]?.[0]||'')}</div><ul class="small">${(Array.isArray(n.perguntas)?n.perguntas:[]).map(i=>`<li>${esc(QUEST[i]||'')}</li>`).join('')}</ul><div class="small">${esc(n.mensagem)}</div></div>`).join('');
+}
+
+function renderPainel(){
+  const el=$('#v-painel'); if(cur!=='painel') return;
+  const rows=Object.keys(GROUPS).map(g=>{
+    const R=remote[g]; const arq=R.arq?merge2('arq',R.arq,g):null; const caso=arq?arq.caso:GROUPS[g].caso;
+    const E=arq?effAll(arq.tat||{}):null; const P=R.priv?Math.max(0,Math.min(4,Number(R.priv.nivel)||0)):null; const x=R.sim&&R.sim.res; const cs=CASES[caso]||CASES[GROUPS[g].caso];
+    const fi=R.ficha; const nf=fi?['C','I','A'].filter(a=>fi[a]&&fi[a].adr&&fi[a].resposta).length:0;
+    return {g,caso,cs,E,P,x,nf};
+  });
+  el.innerHTML=`
+  <h1>Painel da turma</h1>
+  <p class="lede">Atualiza sozinho quando os grupos mudam a arquitetura ou rodam o simulador. Use no pitch e na consolidação.</p>
+  ${!db?'<div class="prov small">Sem conexão com os dados compartilhados: o painel mostra apenas este navegador.</div>':''}
+  <div class="scroll"><table class="stack"><thead><tr><th>Grupo</th><th>Caso</th><th>IHC</th><th>LN</th><th>Acesso</th><th>Priv.</th><th class="num">Fora (min)</th><th class="num">Orçamento</th><th class="num">Pedidos perdidos</th><th class="num">Inconsist.</th><th class="num">Expostos</th><th class="num">Custo</th><th class="num">Fichas</th></tr></thead><tbody>
+  ${rows.map(r=>`<tr><td><b>${r.g.toUpperCase()}</b></td><td>${r.cs.curto}</td>${r.E?['ihc','ln','ac'].map(t=>`<td>${lvTag(r.E[t])}</td>`).join(''):'<td></td><td></td><td></td>'}<td>${r.P!=null?`<span class="tag tC">P${Number(r.P)||0}</span>`:''}</td>
+   ${r.x?`<td class="num">${fmt(r.x.indisp)}</td><td class="num"><span style="color:${r.x.indisp<=r.x.budget?'var(--ok)':'var(--bad)'}">${fmt(r.x.budgetPct)}%</span><div class="bar100"><i style="width:${Math.min(100,Number(r.x.budgetPct)||0)}%;background:${r.x.indisp<=r.x.budget?'var(--ok)':'var(--bad)'}"></i></div></td><td class="num">${fmt(r.x.perd)}</td><td class="num">${fmt(r.x.inco)}</td><td class="num">${fmt(r.x.expostos)}</td><td class="num">${fmt(r.x.custo)}</td>`:'<td class="num mute">—</td><td></td><td></td><td></td><td></td><td></td>'}
+   <td class="num">${r.nf}/3</td></tr>`).join('')}
+  </tbody></table></div>
+  <div class="prov"><h3>Provocação para a consolidação</h3>
+   <p>A especificação de disponibilidade do e-commerce exclui do SLA “ataques DDoS ou incidentes de segurança de grande escala” e “falhas de provedores terceiros”. Somando os grupos, <b>${fmt(rows.reduce((s,r)=>s+(r.x?Number(r.x.excl)||0:0),0))} minutos</b> fora do ar caíram nessa exclusão.</p>
+   <p><b>Seu SLA protege o cliente ou o fornecedor?</b> Em N4, a arquitetura deveria assumir parte desse risco em vez de excluí-lo do contrato?</p></div>
+  <div class="grid g2" style="margin-top:16px">
+   <div class="box"><h3>Perguntas mais escolhidas na Dinâmica 2</h3>${topQ()}</div>
+   <div class="box"><h3>Professor</h3><p class="small mute">Limpa todas as entradas dos grupos e o mural para a próxima turma.</p>${owner?`<button data-act="reset1">Limpar dados da turma</button><span id="resetConf"></span>`:'<p class="small mute">Disponível só para o dono da página.</p>'}</div>
+  </div>`;
+}
+function merge2(sec,data,g){ const d=defaults(g)[sec]; return Object.assign(d,clone(data||{})); }
+function topQ(){
+  if(!mural.length) return '<p class="mute small">Sem publicações ainda.</p>';
+  const c=new Array(QUEST.length).fill(0); mural.forEach(n=>(Array.isArray(n.perguntas)?n.perguntas:[]).forEach(i=>{if(c[i]!=null)c[i]++;}));
+  const mx=Math.max(...c)||1;
+  return c.map((v,i)=>[v,i]).filter(x=>x[0]).sort((a,b)=>b[0]-a[0]).slice(0,6).map(([v,i])=>`<div class="small" style="margin:8px 0">${esc(QUEST[i])}<div class="bar100"><i style="width:${v/mx*100}%;background:var(--ac)"></i></div><span class="mute">${v} escolha(s)</span></div>`).join('');
+}
+
+/* ===================== EVENTOS ===================== */
+let toastT=null; function toast(t){ const e=$('#toast'); e.textContent=t; e.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>e.classList.remove('on'),2600); }
+async function copy(txt){ try{ await navigator.clipboard.writeText(txt); toast('Copiado.'); }catch(e){ toast('Não foi possível copiar; selecione o texto manualmente.'); } }
+const main=$('#main');
+main.addEventListener('change',e=>{
+  const t=e.target;
+  if(t.dataset.tat){ S.arq.tat[t.dataset.tat]=t.checked; touch('arq'); recompute(); renderArq(); return; }
+  if(t.dataset.act==='caso'){ S.arq.caso=t.value; S.sim.p=clone(CASES[t.value].p); touch('arq'); recompute(); touch('sim'); renderCaso(); return; }
+  if(t.dataset.inc){ S.sim.inc[t.dataset.inc].on=t.checked; renderSimOut(true); return; }
+  if(t.dataset.pf){ S.sim.p.forma=t.value; renderSimOut(true); return; }
+  if(t.dataset.f && t.tagName==='SELECT'){ S.ficha[attrSel][t.dataset.f]=t.value; touch('ficha'); return; }
+  if(t.id==='d2ctx'){ d2ctx=t.value; return; }
+  if(t.id==='d2obj'){ d2obj=Number(t.value); return; }
+  if(t.dataset.q!=null){ const i=Number(t.dataset.q); if(t.checked){ if(d2sel.size>=3){t.checked=false;toast('Escolha no máximo 3 perguntas.');return;} d2sel.add(i);} else d2sel.delete(i); const p=t.closest('.box').querySelector('p.small b'); if(p) p.parentElement.innerHTML=`<b>Escolha 3 perguntas</b> (${d2sel.size}/3)`; return; }
+});
+main.addEventListener('input',e=>{
+  const t=e.target;
+  if(t.dataset.p){ S.sim.p[t.dataset.p]=Number(t.value); const v=$('#v_'+t.dataset.p); if(v) v.textContent=fmt(t.value)+(t.dataset.p==='M'||t.dataset.p==='bots'?'×':''); renderSimOut(true); return; }
+  if(t.dataset.inct){ S.sim.inc[t.dataset.inct].t=Number(t.value); const v=$('#vt_'+t.dataset.inct); if(v) v.textContent=t.value; renderSimOut(true); return; }
+  if(t.dataset.f && t.tagName!=='SELECT'){ S.ficha[attrSel][t.dataset.f]=t.value; touch('ficha'); return; }
+});
+main.addEventListener('click',async e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  if(b.dataset.priv!=null){ S.priv.nivel=Number(b.dataset.priv); touch('priv'); recompute(); renderPriv(); return; }
+  if(b.dataset.attr){ attrSel=b.dataset.attr; renderFicha(); return; }
+  const a=b.dataset.act;
+  if(a==='resetsim'){ S.sim.p=clone(C().p); S.sim.inc=defaults(grp).sim.inc; renderSim(); touch('sim'); toast('Valores do caso restaurados.'); }
+  if(a==='prefill') prefill();
+  if(a==='copymd') copy(fichaMd());
+  if(a==='dlmd'){ const d=await claudeDl(); if(d){ try{ await d.save({filename:`ficha-cia-${grp}.md`,data:fichaMd()}); }catch(err){ toast('Download cancelado.'); } } }
+  if(a==='copymsg') copy($('#d2msg').value);
+  if(a==='pub'){
+    if(!db){ toast('Sem conexão: não é possível publicar no mural.'); return; }
+    if(d2sel.size!==3){ toast('Escolha exatamente 3 perguntas.'); return; }
+    const msg=$('#d2msg').value.trim().slice(0,1200); if(!msg){toast('Escreva a mensagem.');return;}
+    b.disabled=true;
+    try{ await db.collection('conversas').add({grupo:grp,contexto:d2ctx,perguntas:[...d2sel],objecao:d2obj,mensagem:msg,ts:Date.now()}); toast('Publicado no mural.'); }
+    catch(err){ toast(err&&err.code==='quota_exceeded'?'O mural está cheio; peça ao professor para limpar.':'Não foi possível publicar.'); }
+    b.disabled=false;
+  }
+  if(a==='reset1'){ $('#resetConf').innerHTML=' <button data-act="reset2" class="pri">Confirmar: apagar tudo</button>'; }
+  if(a==='reset2'){
+    b.disabled=true;
+    try{ for(const g of Object.keys(GROUPS)) for(const s of SECS) await db.doc(`grupos/${g}/secoes/${s}`).delete();
+      const all=await db.collection('conversas').get(); for(const d of all.docs) await db.collection('conversas').doc(d.id).delete();
+      Object.keys(remote).forEach(g=>remote[g]={}); mural=[]; S=defaults(grp); toast('Dados da turma apagados.'); renderPainel(); }
+    catch(err){ toast('Não foi possível apagar tudo.'); }
+  }
+});
+$('#grp').value=grp;
+$('#grp').addEventListener('change',e=>{
+  flushAll(); grp=e.target.value; try{localStorage.setItem('cia_grp',grp);}catch(err){}
+  loadGroupFromRemote(); attrSel='A'; renderCurrent(); toast(`Agora você edita o ${grp.toUpperCase()}.`);
+});
+window.addEventListener('hashchange',route);
+route();
+connect();
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maturidade de ADRs T17</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+/* VOICE work: material de aula para engenheiros, denso e ordenado, como página de um semanário técnico
+   IDEA a escada de maturidade do manuscrito do professor, que vira o seletor de nível de todo o site
+   PICTURE a escada de 4 degraus (cores do manuscrito) + simulador: o mesmo incidente medido em cada nível
+   COLOUR branco, tinta #121212, vermelho #e3120b para o ponto que importa, ardósia #2e6f8e; rampa N1-N4 do manuscrito
+   TYPE Source Serif 4 nos títulos + Inter no texto; mono só em código
+   LAYOUT tab vermelha, título largo, escada à direita no laptop; no celular título, escada, controles */
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#10191e);--ink:light-dark(#121212,#e8edf0);--mut:light-dark(#4a5560,#a9b6bf);--red:light-dark(#e3120b,#ff5a4f);--sl:light-dark(#2e6f8e,#7cc0de);--pan:light-dark(#e3ecf0,#18262e);--rule:light-dark(#c9d3d8,#2b3b45);--n1:light-dark(#d4380d,#ff7a55);--n2:light-dark(#b88200,#e8b53a);--n3:light-dark(#11708a,#5cc3dc);--n4:light-dark(#2f6b1f,#7fcf63);--code:light-dark(#f3f6f8,#0b1317)}
+:root[data-theme=light]{color-scheme:light}
+:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html{scroll-padding-top:72px}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Inter,system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:"Source Serif 4",Georgia,serif;letter-spacing:-.02em;line-height:1.08;text-wrap:balance;margin:0}
+h1{font-size:clamp(32px,4.6vw,50px)}
+h2{font-size:clamp(26px,3vw,34px);margin-bottom:10px}
+h3{font-size:20px;margin-bottom:6px}
+p{margin:0 0 12px;max-width:70ch}
+a{color:var(--sl)}
+.band{padding:clamp(28px,4vw,56px) max(5vw,16px)}
+.wrap{max-width:1240px;margin:0 auto}
+.tab{display:inline-block;background:var(--red);color:#fff;font-weight:700;font-size:14px;padding:4px 10px;margin-bottom:14px}
+.lede{font-size:18px;color:var(--mut);max-width:62ch}
+nav.scroll{display:flex;gap:6px;overflow-x:auto;padding:10px max(5vw,16px);border-block:1px solid var(--rule);background:var(--bg);position:relative;z-index:5}
+@media(min-width:900px){nav.scroll{position:sticky;top:0}}
+nav.scroll a{flex:none;text-decoration:none;color:var(--ink);font-size:14px;font-weight:600;padding:8px 12px;border-radius:4px}
+nav.scroll a:hover{background:var(--pan)}
+.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:clamp(20px,4vw,48px);align-items:end}
+.stairs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;align-items:end;height:clamp(300px,34vw,400px);position:relative}
+.step{all:unset;cursor:pointer;display:flex;flex-direction:column;justify-content:flex-start;padding:12px 10px;border:2px solid var(--ink);background:var(--bg);transition:transform .2s;position:relative}
+.step:focus-visible{outline:3px solid var(--sl);outline-offset:3px}
+.step:hover{transform:translateY(-3px)}
+.step b{font-family:"Source Serif 4",serif;font-size:clamp(15px,1.6vw,19px);line-height:1.1;color:var(--c)}
+.step small{display:block;font-size:13px;color:var(--mut);margin-top:6px;line-height:1.35}
+.step .num{font-size:13px;font-weight:700;color:var(--c);margin-bottom:4px}
+.step[aria-pressed=true]{background:color-mix(in srgb,var(--c) 14%,var(--bg));box-shadow:inset 0 -6px 0 var(--c)}
+.base{grid-column:1/-1;border:2px solid var(--ink);text-align:center;font-family:"Source Serif 4",serif;font-weight:700;font-size:18px;padding:8px;color:var(--sl)}
+.cap{font-size:13px;color:var(--mut);margin-top:8px}
+.panel{background:var(--pan);padding:clamp(16px,2.4vw,28px)}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(16px,3vw,36px)}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.seg{display:inline-flex;flex-wrap:wrap;gap:4px;background:var(--pan);padding:4px;border-radius:6px}
+.seg button{font:600 14px Inter,sans-serif;border:0;background:transparent;color:var(--ink);padding:10px 14px;min-height:44px;border-radius:4px;cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--bg);box-shadow:0 0 0 1px var(--rule);color:var(--c,var(--ink))}
+.seg button:focus-visible{outline:2px solid var(--sl)}
+.controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:16px 0}
+.fig{position:relative;min-height:300px;background:var(--bg);border:1px solid var(--rule)}
+.fig>svg{position:absolute;inset:0;width:100%;height:100%}
+svg text{paint-order:stroke;stroke:var(--bg);stroke-width:4px;font:13px Inter,sans-serif;fill:var(--mut)}
+.kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);margin-top:14px}
+.kpi{background:var(--bg);padding:12px 14px}
+.kpi span{display:block;font-size:13px;color:var(--mut)}
+.kpi b{font-family:"Source Serif 4",serif;font-size:clamp(22px,2.4vw,30px);white-space:nowrap}
+.kpi i{font-style:normal;font-size:13px;display:block}
+.chain{display:flex;flex-wrap:wrap;gap:6px 4px;align-items:center;margin:10px 0}
+.chip{border:1.5px solid var(--ink);padding:6px 10px;font-size:14px;font-weight:600;background:var(--bg)}
+.chip.t{border-color:var(--c);color:var(--c)}
+.arr{color:var(--mut)}
+.ctrl{border:2px dashed var(--c);padding:10px 12px;font-size:14px;margin-top:8px}
+.ctrl.closed{border-style:solid;background:color-mix(in srgb,var(--c) 10%,var(--bg))}
+.adr{border-top:4px solid var(--c);background:var(--bg);padding:18px 20px;box-shadow:0 0 0 1px var(--rule)}
+.adr dl{display:grid;grid-template-columns:9.5em minmax(0,1fr);gap:8px 14px;margin:12px 0 0}
+.adr dt{font-weight:700;font-size:14px;color:var(--mut)}
+.adr dd{margin:0;font-size:15px}
+.adr ul{margin:0;padding-left:18px}
+.tag{display:inline-block;font-size:13px;font-weight:700;color:#fff;background:var(--c);padding:2px 8px;border-radius:3px}
+.warn{color:var(--red);font-weight:600}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th,td{text-align:left;vertical-align:top;padding:10px 10px;border-bottom:1px solid var(--rule)}
+th{font-size:14px;color:var(--mut);font-weight:700}
+td:first-child{font-weight:600}
+.lv{color:var(--c);font-family:"Source Serif 4",serif;font-size:16px}
+pre{background:var(--code);padding:14px 16px;font:13px/1.5 "JetBrains Mono",monospace;overflow-x:auto;margin:0;border:1px solid var(--rule)}
+.codehead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:14px;font-size:14px;font-weight:600}
+.copy{font:600 13px Inter,sans-serif;border:1px solid var(--rule);background:var(--bg);color:var(--ink);padding:8px 12px;min-height:36px;cursor:pointer;border-radius:4px}
+.time{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:0 18px}
+.time .t{font-family:"Source Serif 4",serif;font-weight:700;font-size:22px;white-space:nowrap;padding:14px 0;border-top:2px solid var(--ink)}
+.time .d{padding:14px 0;border-top:1px solid var(--rule)}
+.time .d h3{font-size:19px}
+.bar{height:10px;background:var(--pan);margin:6px 0 2px;position:relative}
+.bar i{position:absolute;inset:0 auto 0 0;background:var(--c)}
+.find{counter-reset:f;list-style:none;padding:0;margin:0}
+.find li{counter-increment:f;padding:12px 0 12px 44px;border-bottom:1px solid var(--rule);position:relative}
+.find li::before{content:counter(f);position:absolute;left:0;top:10px;width:30px;height:30px;border-radius:50%;background:var(--red);color:#fff;font-weight:700;display:grid;place-items:center;font-size:14px}
+.check label{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:15px;cursor:pointer}
+.check input{width:20px;height:20px;margin-top:2px;flex:none;accent-color:var(--sl)}
+.result{font-family:"Source Serif 4",serif;font-size:clamp(26px,3vw,36px);color:var(--c);line-height:1.1}
+.note{font-size:13px;color:var(--mut)}
+.loop{overflow-x:auto}
+.loop svg{min-width:640px;width:100%;height:auto;display:block}
+.loop svg text{font-size:14px;fill:var(--ink)}
+footer{border-top:1px solid var(--rule)}
+@media(max-width:900px){.hero,.grid2{grid-template-columns:minmax(0,1fr)}.grid3{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){.stairs{height:300px;gap:4px}.step{padding:8px 6px}.step small{display:none}.adr dl{grid-template-columns:minmax(0,1fr)}.adr dt{margin-top:6px}table{font-size:13px}th,td{padding:6px 4px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px;border-bottom:1px solid var(--rule)}.stack td{display:block;border:0;padding:3px 0}.stack td::before{content:attr(data-l);display:block;font-size:12px;color:var(--mut);font-weight:700}.time{grid-template-columns:minmax(0,1fr)}.time .d{border-top:0;padding-top:0}}
+@media(prefers-reduced-motion:reduce){.step{transition:none}}
+</style>
+<script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script>
+</head>
+<body>
+
+<header class="band">
+ <div class="wrap hero">
+  <div>
+   <span class="tab">T17 · aula de 25/11/2026 · Especificação para comportamento dinâmico</span>
+   <h1>A mesma especificação produz arquiteturas diferentes. O que muda é o nível de maturidade das decisões.</h1>
+   <p class="lede" style="margin-top:16px">Escala de maturidade de ADRs (Arakaki): do código sem tática à malha fechada cibernética. Escolha um degrau. Todo o site (simulador, ADRs e caminho) acompanha o nível selecionado.</p>
+   <p class="note">Casos: Especificação de Disponibilidade do E-commerce (documental, estática) e Case 02 Fam Show Ticket (Specification as Behavior).</p>
+  </div>
+  <div>
+   <div class="stairs" id="stairs" role="group" aria-label="Nível de maturidade"></div>
+   <div class="base">Escala de maturidade de ADRs</div>
+   <p class="cap" id="lvdesc"></p>
+  </div>
+ </div>
+</header>
+
+<nav class="scroll" aria-label="Seções">
+ <a href="#aula">Roteiro 90 min</a><a href="#conceitos">Conceitos</a><a href="#diagnostico">Dinâmica 1</a><a href="#simulador">Simulador</a><a href="#adrs">ADRs por nível</a><a href="#din2">Dinâmica 2</a><a href="#caminho">Caminho</a><a href="#consolidacao">Consolidação</a>
+</nav>
+
+<section class="band" id="aula">
+ <div class="wrap">
+  <h2>Roteiro: 90 minutos, 5 grupos, do documento ao laço de controle</h2>
+  <p>Fio condutor: cada grupo sai da aula com um ADR que sobe pelo menos um degrau, sustentado por uma tática nomeada e por um cenário de aferição que pode ser medido.</p>
+  <div class="grid2" style="margin-top:18px">
+   <div class="time" id="timeline"></div>
+   <div>
+    <div class="panel">
+     <h3>Distribuição de tempo</h3>
+     <div id="timebars"></div>
+     <p class="note" style="margin-top:10px">Proposta de cronometragem. Ajuste a Consolidação se a Dinâmica 2 render mais.</p>
+    </div>
+    <div class="panel" style="margin-top:16px">
+     <h3>Entregáveis por grupo</h3>
+     <ul style="margin:0;padding-left:18px">
+      <li>Dinâmica 1: diagnóstico da spec do E-commerce no seu foco CIA, com o nível atual e um ADR reescrito para o próximo nível.</li>
+      <li>Dinâmica 2: para uma tática do Fam Show, a mesma exigência escrita <b>as Test</b>, <b>as Behavior</b> e <b>as Code</b>.</li>
+      <li>Consolidação: o artefato posicionado na escada, com justificativa pela régua de 6 perguntas.</li>
+     </ul>
+    </div>
+   </div>
+  </div>
+ </div>
+</section>
+
+<section class="band" id="conceitos" style="background:var(--pan)">
+ <div class="wrap">
+  <h2>Conceitos: um RNF só vira arquitetura quando tem tática, cenário e medida</h2>
+  <div class="grid3" style="margin-top:16px">
+   <div><h3>CIA como atributos de qualidade</h3><p><b>Confidencialidade</b> (autenticar, autorizar, limitar exposição, criptografar), <b>Integridade</b> (transações, validação, trilha de auditoria, invariantes de estoque) e <b>Disponibilidade</b> (detectar, recuperar e prevenir falhas). Nos dois casos, o "A" aparece especificado e o "C" e o "I" aparecem só como listas.</p></div>
+   <div><h3>Cenário de atributo de qualidade (6 partes)</h3><p><b>Fonte</b> · <b>Estímulo</b> · <b>Artefato</b> · <b>Ambiente</b> · <b>Resposta</b> · <b>Medida da resposta</b>. Sem a medida não há aferição, e sem aferição não existe controle. A medida é o que permite passar de N2 para N3.</p></div>
+   <div><h3>Táticas de disponibilidade (Bass et al.)</h3><p><b>Detectar:</b> ping/echo, heartbeat, monitor, condition monitoring, sanity check. <b>Recuperar:</b> redundância ativa/passiva, rollback, retry, degradação, reconfiguração. <b>Prevenir:</b> remoção de serviço, transações, modelo preditivo.</p></div>
+  </div>
+  <h3 style="margin-top:22px">Onde um RNF de disponibilidade aparece nas 5 visões (4+1)</h3>
+  <div class="scroll"><table class="stack">
+   <thead><tr><th>Visão</th><th>E-commerce (checkout 99,9%)</th><th>Fam Show (abertura das vendas)</th></tr></thead>
+   <tbody id="views"></tbody>
+  </table></div>
+  <h3 style="margin-top:22px">As formas de uma mesma especificação</h3>
+  <div class="scroll"><table class="stack">
+   <thead><tr><th>Forma</th><th>O que é</th><th>Quem executa</th><th>Nível típico</th></tr></thead>
+   <tbody id="forms"></tbody>
+  </table></div>
+ </div>
+</section>
+
+<section class="band" id="diagnostico">
+ <div class="wrap">
+  <h2>Dinâmica 1: as duas especificações têm números, mas nenhuma fecha o laço</h2>
+  <p>Problematização para os grupos. Os achados abaixo são o gabarito do professor. Antes de mostrá-los, peça a cada grupo que encontre pelo menos dois no seu foco CIA.</p>
+  <div class="grid2" style="margin-top:14px">
+   <div><h3>E-commerce: especificação documental estática</h3><ol class="find" id="findE"></ol></div>
+   <div><h3>Fam Show: specification as behavior</h3><ol class="find" id="findF"></ol></div>
+  </div>
+  <div class="panel" style="margin-top:22px">
+   <h3>Focos dos grupos na Dinâmica 1 (spec do E-commerce)</h3>
+   <div class="scroll"><table class="stack"><thead><tr><th>Grupo</th><th>Foco CIA</th><th>Pergunta-guia</th><th>Tática a propor</th></tr></thead><tbody id="g1"></tbody></table></div>
+  </div>
+ </div>
+</section>
+
+<section class="band" id="simulador" style="background:var(--pan)">
+ <div class="wrap">
+  <h2>Simulador: o mesmo incidente, a mesma especificação e quatro desfechos diferentes</h2>
+  <div class="controls">
+   <div class="seg" id="caseSeg"><button data-case="ecom" aria-pressed="true">E-commerce: gateway de pagamento falha</button><button data-case="fam" aria-pressed="false">Fam Show: abertura + banco degrada</button></div>
+   <div class="seg" id="lvSeg"></div>
+  </div>
+  <p id="simIntro"></p>
+  <div class="grid2">
+   <div>
+    <div class="fig" id="fig"><svg id="chart" aria-label="Série temporal do SLI"></svg></div>
+    <div class="kpis" id="kpis"></div>
+    <p class="note" style="margin-top:8px">Valores ilustrativos para a aula. Os tempos de detecção e recuperação foram arbitrados por nível; a latência do Fam Show usa W = S/(1−ρ) com S = 50 ms, o mesmo modelo M/M/1 da simulação da turma.</p>
+   </div>
+   <div>
+    <h3>Arquitetura resultante neste nível</h3>
+    <div class="chain" id="chain"></div>
+    <div id="ctrlbox"></div>
+    <h3 style="margin-top:18px">Por que o resultado muda</h3>
+    <p id="why"></p>
+   </div>
+  </div>
+ </div>
+</section>
+
+<section class="band" id="adrs">
+ <div class="wrap">
+  <h2 id="adrTitle">ADRs por nível</h2>
+  <p>A mesma decisão de arquitetura, escrita em cada degrau. Use o seletor do topo ou os botões abaixo. Compare o que aparece a cada nível: tática nomeada, cenário com medida, sensor em produção e atuador automático.</p>
+  <div class="controls">
+   <div class="seg" id="caseSeg2"><button data-case="ecom" aria-pressed="true">E-commerce · ADR-ECOM-007</button><button data-case="fam" aria-pressed="false">Fam Show · ADR-001 Fila virtual</button></div>
+   <div class="seg" id="lvSeg2"></div>
+  </div>
+  <div class="grid2">
+   <div id="adrCard"></div>
+   <div>
+    <h3>Comparação lado a lado</h3>
+    <div class="scroll"><table class="stack"><thead><tr><th>Aspecto</th><th>N1</th><th>N2</th><th>N3</th><th>N4</th></tr></thead><tbody id="adrCmp"></tbody></table></div>
+    <p class="note" style="margin-top:8px">O ADR-001 original do case Fam Show fica entre N1 e N2: tem decisão e consequências, mas não tem tática medida nem cenário. Ele também atribui à fila a prevenção de overselling, o que é papel da reserva atômica.</p>
+   </div>
+  </div>
+ </div>
+</section>
+
+<section class="band" id="din2" style="background:var(--pan)">
+ <div class="wrap">
+  <h2>Dinâmica 2: escrever a mesma exigência as Test, as Behavior e as Code</h2>
+  <p>Cada grupo recebe uma tática do Fam Show. A régua é a seguinte: o comportamento é especificado com medida, o teste reproduz o estímulo, e o código observa em produção e, no N4, também age.</p>
+  <div class="scroll"><table class="stack"><thead><tr><th>Grupo</th><th>Tática / regra</th><th>as Behavior (Gherkin com medida)</th><th>as Test</th><th>as Code (sensor/atuador)</th><th>Gráfico da simulação</th></tr></thead><tbody id="g2"></tbody></table></div>
+  <h3 style="margin-top:24px">Exemplo resolvido (G1 · admissão controlada)</h3>
+  <div class="grid2">
+   <div>
+    <div class="codehead">as Behavior · Gherkin<button class="copy" data-copy="c1">Copiar</button></div>
+<pre id="c1">Funcionalidade: Admissão controlada na abertura das vendas
+  Cenário: Flash crowd com degradação do banco
+    Dado 5.000 usuários na sala de espera às 10:00
+    E a capacidade do checkout cai 30% aos 8 minutos
+    Quando a venda é aberta
+    Então a latência p95 do checkout fica abaixo de 2 s
+      em pelo menos 99% dos minutos da 1ª hora
+    E a vazão de admissão é reajustada em até 60 s
+      após a degradação
+    E vendidos + reservas ativas nunca excede 450</pre>
+    <div class="codehead">as Test · k6<button class="copy" data-copy="c2">Copiar</button></div>
+<pre id="c2">export const options = {
+  scenarios: { abertura: {
+    executor: 'ramping-arrival-rate',
+    timeUnit: '1s', preAllocatedVUs: 2000,
+    stages: [{ target: 1000, duration: '30s' },
+             { target: 1000, duration: '5m' }] } },
+  thresholds: {
+    'http_req_duration{step:checkout}': ['p(95)&lt;2000'],
+    'http_req_failed': ['rate&lt;0.005'],
+    'oversold_tickets': ['count==0'] // Counter customizado
+  }
+};</pre>
+   </div>
+   <div>
+    <div class="codehead">as Code · sensor (Prometheus, N3)<button class="copy" data-copy="c3">Copiar</button></div>
+<pre id="c3">groups:
+- name: famshow-slo
+  rules:
+  - alert: CheckoutP95AcimaDoSLO
+    expr: histogram_quantile(0.95, sum by (le)
+      (rate(http_request_duration_seconds_bucket
+      {route="/checkout"}[1m]))) &gt; 2
+    for: 1m
+    labels: { severity: critical }
+  - alert: InvarianteDeEstoqueViolada
+    expr: tickets_sold_total + tickets_reserved_active &gt; 450
+    labels: { severity: page }</pre>
+    <div class="codehead">as Code · controlador (N4, fecha o laço)<button class="copy" data-copy="c4">Copiar</button></div>
+<pre id="c4"># executa a cada 10 s: setpoint ρ = 0,75 (Lei de Little + M/M/1)
+mu   = capacidade_medida('checkout')   # sensor: req/s sem erro
+p95  = sli('checkout.latencia.p95')    # sensor técnico
+conv = sli('negocio.conversao')        # sensor de negócio
+if estoque_livre() == 0 and reservas_ativas() == 0:
+    fila.encerrar('Esgotado')          # atuador de negócio
+lam = 0.75 * mu                        # vazão-alvo
+if p95 &gt; 1.5: lam *= 0.8               # margem antes do SLO de 2 s
+if conv &lt; 0.5 * baseline_conv(): alerta('anomalia de negócio')
+fila.definir_vazao(lam)                # atuador: tática de admissão</pre>
+   </div>
+  </div>
+ </div>
+</section>
+
+<section class="band" id="caminho">
+ <div class="wrap">
+  <h2>O caminho: subir de degrau é aprofundar táticas, cenários de aferição e controle</h2>
+  <p>Para mudar de nível, as três trilhas precisam avançar juntas. Uma tática sem cenário continua em N2. Um cenário medido sem atuador fica em N3. Só se chega a N4 quando a medida aciona a tática sem depender de um humano.</p>
+  <div class="loop panel" style="margin:18px 0">
+   <svg viewBox="0 0 960 300" role="img" aria-label="Laço de controle cibernético">
+    <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker></defs>
+    <g style="color:var(--ink)" fill="none" stroke="currentColor" stroke-width="2">
+     <rect x="20" y="70" width="150" height="64" rx="4" style="fill:var(--bg)"/>
+     <circle cx="230" cy="102" r="20" style="fill:var(--bg)"/>
+     <rect x="290" y="70" width="170" height="64" rx="4" style="fill:var(--bg);stroke:var(--n4)"/>
+     <rect x="510" y="70" width="160" height="64" rx="4" style="fill:var(--bg);stroke:var(--n4)"/>
+     <rect x="720" y="70" width="200" height="64" rx="4" style="fill:var(--bg)"/>
+     <rect x="510" y="200" width="160" height="64" rx="4" style="fill:var(--bg);stroke:var(--n3)"/>
+     <path d="M170 102H208" marker-end="url(#ah)"/><path d="M250 102H288" marker-end="url(#ah)"/><path d="M460 102H508" marker-end="url(#ah)"/><path d="M670 102H718" marker-end="url(#ah)"/>
+     <path d="M820 134V232H672" marker-end="url(#ah)"/>
+     <path d="M510 232H230V124" marker-end="url(#ah)" style="stroke:var(--n4)"/>
+     <path d="M820 20V68" marker-end="url(#ah)" style="stroke:var(--red)"/>
+     <path d="M590 264V286H120" stroke-dasharray="6 5" style="stroke:var(--n3)"/>
+    </g>
+    <text x="95" y="98" text-anchor="middle" style="font-weight:700">Setpoint</text><text x="95" y="118" text-anchor="middle">SLO (ex.: p95 &lt; 2 s)</text>
+    <text x="230" y="107" text-anchor="middle" style="font-weight:700">Σ</text>
+    <text x="375" y="98" text-anchor="middle" style="font-weight:700">Controlador</text><text x="375" y="118" text-anchor="middle">política do ADR</text>
+    <text x="590" y="98" text-anchor="middle" style="font-weight:700">Atuador</text><text x="590" y="118" text-anchor="middle">tática arquitetural</text>
+    <text x="820" y="98" text-anchor="middle" style="font-weight:700">Sistema</text><text x="820" y="118" text-anchor="middle">checkout / fila</text>
+    <text x="590" y="228" text-anchor="middle" style="font-weight:700">Sensor</text><text x="590" y="248" text-anchor="middle">SLI técnico + negócio</text>
+    <text x="830" y="40" style="fill:var(--red);font-weight:600">Perturbação: flash crowd, falha</text>
+    <text x="300" y="224" style="fill:var(--n4);font-weight:600">N4: realimentação automática</text>
+    <text x="130" y="280" style="fill:var(--n3);font-weight:600">N3: painel → humano decide (malha aberta)</text>
+   </svg>
+  </div>
+  <div class="scroll"><table class="stack" id="pathTbl"><thead><tr><th>Trilha</th><th class="lv" style="--c:var(--n1)">N1 · Sem controle</th><th class="lv" style="--c:var(--n2)">N2 · Processos manuais</th><th class="lv" style="--c:var(--n3)">N3 · Malha aberta</th><th class="lv" style="--c:var(--n4)">N4 · Malha fechada</th></tr></thead><tbody id="path"></tbody></table></div>
+  <div class="panel" style="margin-top:20px">
+   <h3>Leitura da simulação da turma (Fam Show)</h3>
+   <p>Os quatro gráficos mostram uma malha aberta muito bem dimensionada. A vazão fixa de 37,5 req/s vem da Lei de Little (a posição 2.250 corresponde a cerca de 1 min de espera) e mantém ρ = 75%, com cerca de 200 ms de latência no modelo M/M/1. A gestão atômica de estoque já tem comportamento de N4, porque a expiração automática de reservas (RN004/RN005) devolve estoque sem intervenção humana. A fila ainda está em N3, porque os 37,5 req/s são uma constante de projeto. A fila passa a N4 quando a vazão vira variável controlada, recalculada a partir de μ e do p95 medidos. É exatamente o caso que o simulador acima mostra, quando o banco perde 30% de capacidade.</p>
+  </div>
+ </div>
+</section>
+
+<section class="band" id="consolidacao" style="background:var(--pan)">
+ <div class="wrap">
+  <h2>Consolidação: régua de 6 perguntas para posicionar qualquer ADR na escada</h2>
+  <div class="grid2" style="margin-top:12px">
+   <div class="check" id="rubric"></div>
+   <div>
+    <div class="panel" style="background:var(--bg)" id="rubOut"></div>
+    <h3 style="margin-top:20px">Perguntas de fechamento (exit ticket)</h3>
+    <ol style="padding-left:20px;margin:0">
+     <li>Por que um RTO de 1 h é incompatível com um orçamento de cerca de 43 min/mês?</li>
+     <li>Qual a diferença entre "monitorar" (N3) e "controlar" (N4) no seu ADR?</li>
+     <li>Qual sinal de negócio do seu caso detecta uma falha antes da CPU subir?</li>
+     <li>Que parte do seu ADR um humano ainda precisa decidir, e por quê?</li>
+    </ol>
+   </div>
+  </div>
+ </div>
+</section>
+
+<footer class="band"><div class="wrap note">Material de apoio à aula T17 · PCS/USP · Prof. Reginaldo Arakaki · Escala de maturidade de ADRs conforme manuscrito do professor. Exemplos numéricos do simulador são didáticos e não medições reais.</div></footer>
+
+<script>
+{
+const LV=[
+ {n:1,name:'Programação sem controle',short:'Ad hoc',c:'var(--n1)',tr:'Código sem tática, "só RF".'},
+ {n:2,name:'Processos manuais',short:'Manual',c:'var(--n2)',tr:'Suporte, monitoração de infra, cliente/negócio avisa problemas, logs fracos.'},
+ {n:3,name:'Malha aberta cibernética',short:'Malha aberta',c:'var(--n3)',tr:'Ferramentas de monitoração, foco infra ± negócio, problemas tratados por processos manuais, reativo e alguns scripts.'},
+ {n:4,name:'Malha fechada cibernética',short:'Malha fechada',c:'var(--n4)',tr:'Táticas de observação de business drivers, detecção por negócio, recuperação ativa/passiva, predição.'}];
+let st={lv:3,cs:'ecom'};
+try{const s=JSON.parse(localStorage.getItem('t17mat')||'{}');if(s.lv)st.lv=s.lv;if(s.cs)st.cs=s.cs}catch(e){}
+const save=()=>{try{localStorage.setItem('t17mat',JSON.stringify(st))}catch(e){}};
+const $=id=>document.getElementById(id);
+
+/* ---------- escada ---------- */
+$('stairs').innerHTML=LV.map((l,i)=>`<button class="step" data-lv="${l.n}" style="--c:${l.c};height:${40+i*20}%" aria-pressed="false"><span class="num">N${l.n}</span><b>${l.name}</b><small>${l.tr}</small></button>`).join('');
+const segLv=id=>{$(id).innerHTML=LV.map(l=>`<button data-lv="${l.n}" style="--c:${l.c}" aria-pressed="false">N${l.n} ${l.short}</button>`).join('')};
+segLv('lvSeg');segLv('lvSeg2');
+
+/* ---------- roteiro ---------- */
+const TL=[
+ ['0–10','Problematização',10,'Pergunta de abertura: "o E-commerce promete 99,9% e RTO de 1 h. Isso é possível?" Os grupos fazem a conta (43 min/mês contra 60 min) em 3 minutos. Apresentar a escada de maturidade como hipótese.'],
+ ['10–25','Conceitos',15,'CIA como atributos de qualidade, táticas de Bass, cenário em 6 partes, onde o RNF aparece nas 5 visões (4+1) e as formas da especificação (documento → teste → comportamento → código → telemetria).'],
+ ['25–50','Dinâmica 1 · maturidade de ADR',25,'5 min de leitura da spec do E-commerce, 12 min de diagnóstico por foco CIA com classificação do nível atual e reescrita de um ADR para N+1, 8 min de socialização (1 min por grupo e 3 min de gabarito).'],
+ ['50–78','Dinâmica 2 · as Test / as Behavior / as Code',28,'Uma tática do Fam Show por grupo. 18 min de produção (Gherkin com medida, teste de carga ou concorrência, regra de sensor ou controlador). 10 min de rodada cruzada, em que cada grupo tenta "quebrar" o cenário do vizinho com uma perturbação.'],
+ ['78–90','Consolidação',12,'Cada grupo cola o artefato na escada e justifica pela régua de 6 perguntas. Fechamento: a diferença entre monitorar e controlar, seguida do exit ticket.']];
+$('timeline').innerHTML=TL.map(t=>`<div class="t">${t[0]}</div><div class="d"><h3>${t[1]}</h3><p style="margin:0">${t[3]}</p></div>`).join('');
+$('timebars').innerHTML=TL.map((t,i)=>`<div style="--c:${['var(--red)','var(--sl)','var(--n2)','var(--n3)','var(--n4)'][i]};margin-top:8px"><div style="display:flex;justify-content:space-between;font-size:14px"><span>${t[1]}</span><b style="white-space:nowrap">${t[2]} min</b></div><div class="bar"><i style="width:${t[2]/28*100}%"></i></div></div>`).join('');
+
+/* ---------- conceitos ---------- */
+const VIEWS=[
+ ['Lógica','Componente Checkout com PaymentAdapter atrás de circuit breaker; interface única para gateways A e B.','Virtual Waiting Room, Ticket, Reservation, Payment e Issuer, com o invariante de estoque como responsabilidade do Reservation.'],
+ ['Processo','Timeouts de 5 s, retry com backoff e chamadas assíncronas para e-mail e recomendações (degradáveis).','Concorrência no último ingresso (lock ou UPDATE condicional), TTL de 10 min e vazão de admissão.'],
+ ['Desenvolvimento','Pipeline com fitness functions de SLO; feature flags para degradação graciosa.','Testes BDD, de concorrência e de carga (k6) no pipeline; controlador versionado como código.'],
+ ['Física','2 zonas atrás do LB, réplica do banco e monitoração sintética em 3 localidades.','CDN, LB, fila na borda e PostgreSQL com réplica (RPO de 5 min); pré-aquecimento antes da abertura.'],
+ ['Cenários (+1)','Gateway A degrada na Black Friday: o checkout se recupera em até 2 min.','Flash crowd com banco degradado: p95 abaixo de 2 s e 0 overselling.']];
+$('views').innerHTML=VIEWS.map(v=>`<tr><td>${v[0]}</td><td>${v[1]}</td><td>${v[2]}</td></tr>`).join('');
+const FORMS=[
+ ['as Document','Texto, tabelas de SLA e penalidades','Pessoas (leitura, auditoria mensal)','N1–N2'],
+ ['as Test','Teste automatizado que reproduz o estímulo','Pipeline, antes do deploy','N2–N3'],
+ ['as Behavior','Cenário Gherkin com medida da resposta','Pipeline + negócio (linguagem comum)','N3'],
+ ['as Code','Regra de alerta, SLO, política e controlador versionados','Plataforma em produção','N3–N4'],
+ ['as Control','Sensor → comparação com o setpoint → atuador (tática)','O próprio sistema, continuamente','N4']];
+$('forms').innerHTML=FORMS.map(f=>`<tr><td>${f[0]}</td><td>${f[1]}</td><td>${f[2]}</td><td>${f[3]}</td></tr>`).join('');
+
+/* ---------- diagnóstico ---------- */
+const FE=[
+ '<b>RTO crítico de 1 h maior que o orçamento mensal de cerca de 43 min.</b> Um único incidente crítico resolvido dentro do RTO já viola o SLA de 99,9%. As duas metas se contradizem.',
+ '<b>Lacunas na tabela de créditos.</b> Os valores entre 99,89% e 99,9% (ex.: 99,895%) e entre 98,99% e 99,0% não têm crédito definido.',
+ '<b>Definição de "disponível" sem critério operacional.</b> Não há quórum entre as 3 localidades nem limiar de latência. Um checkout que responde em 30 s conta como disponível.',
+ '<b>Exclusões que retiram as ameaças mais prováveis.</b> Falhas de terceiros (o gateway de pagamento) e DDoS ficam fora da conta. Confidencialidade e Integridade não aparecem. A spec ainda fala em "fora do controle do contratante", provavelmente querendo dizer contratado.',
+ '<b>Janela de manutenção maior que o orçamento.</b> Até 4 h por domingo somam cerca de 17 h/mês excluídas, contra 43 min de orçamento, e e-commerce vende de madrugada.',
+ '<b>Só medição retrospectiva.</b> A fórmula mensal não diz quem detecta, em quanto tempo, nem o que se faz. A spec é N2 documental. Também não há RPO, ou seja, nenhuma garantia sobre pedidos perdidos (Integridade).'];
+const FF=[
+ '<b>RTO de 30 min maior que o orçamento de 21,6 min/mês (99,95%).</b> É a mesma contradição do E-commerce.',
+ '<b>SLO mensal para um risco concentrado em 1 hora.</b> Cumprir 99,95% no mês e cair 20 min na abertura é um desastre de negócio. Falta um SLO por janela crítica.',
+ '<b>"Tempo médio inferior a 2 s" esconde a cauda.</b> O certo é especificar p95/p99 por etapa (fila, reserva, pagamento).',
+ '<b>ADR-001 atribui à fila a prevenção de overselling.</b> A fila reduz concorrência. Quem garante RN002 é a reserva atômica. As duas decisões devem ser separadas, cada uma com sua medida.',
+ '<b>Simulações com resultado sem medida.</b> "Sistema permanece estável" na Simulação 02 não é aferível. Falta limiar (p95, taxa de erro).',
+ '<b>Observabilidade lista ferramentas e métricas, mas sem limiar nem ação.</b> É malha aberta por construção. O invariante "vendidos + reservas ativas ≤ 450" nem aparece como métrica.'];
+$('findE').innerHTML=FE.map(x=>`<li>${x}</li>`).join('');
+$('findF').innerHTML=FF.map(x=>`<li>${x}</li>`).join('');
+const G1=[
+ ['G1','Disponibilidade · detecção','Quem percebe a falha do checkout, e em quanto tempo?','Monitor sintético 2/3 locais; SLI por jornada; detecção por negócio (pedidos/min)'],
+ ['G2','Disponibilidade · recuperação','Como cumprir 43 min/mês com RTO de 1 h?','Redundância ativa do gateway, circuit breaker, degradação graciosa'],
+ ['G3','Integridade','O que garante que nenhum pedido pago se perde ou duplica?','Transação + idempotência de pagamento, RPO definido, trilha de auditoria'],
+ ['G4','Confidencialidade','Por que a API de auth e o DDoS estão fora da medida?','Rate limiting, WAF, MFA administrativo; trazer DDoS para dentro do cenário'],
+ ['G5','Medição e SLA','A fórmula, as exclusões e os créditos são aferíveis?','SLO + error budget, quórum de medição, janela de manutenção sem impacto (rolling)']];
+$('g1').innerHTML=G1.map(g=>`<tr><td>${g[0]}</td><td>${g[1]}</td><td>${g[2]}</td><td>${g[3]}</td></tr>`).join('');
+
+/* ---------- simulador ---------- */
+const SIM={
+ ecom:{title:'Gateway de pagamento principal passa a falhar no minuto 10 de um pico (checkout crítico).',budget:43.2,xmax:150,ylab:'checkout OK (% das verificações)',slo:99.9,
+  lv:{
+   1:{ev:[[10,'falha'],[55,'cliente reclama em rede social'],[95,'causa achada no log'],[130,'deploy manual']],down:[[10,130]],who:'Cliente',act:'Dev de plantão (deploy)',
+      why:'Não existe tática. O checkout chama um único gateway de forma síncrona. A falha só aparece quando o cliente reclama, e os logs fracos alongam o diagnóstico. A spec diz 99,9%, mas nada na arquitetura sustenta esse número.',
+      chain:['Cliente','LB','App monolítico','Gateway A'],ctrl:null},
+   2:{ev:[[10,'falha'],[30,'ticket do suporte'],[50,'diagnóstico'],[70,'restart + troca manual']],down:[[10,70]],who:'Suporte (ticket)',act:'Operador seguindo wiki',
+      why:'O Zabbix vê CPU e memória normais, porque o problema está no gateway e não na infra. Quem detecta é o suporte, a partir de tickets. A recuperação depende de um processo manual. A disponibilidade é calculada à mão no fim do mês.',
+      chain:['Cliente','LB','App','Gateway A'],ctrl:{t:'Pessoas: suporte + monitoração de infra (CPU, memória, disco). Sem SLI de jornada.',closed:false}},
+   3:{ev:[[10,'falha'],[13,'alerta sintético 2/3'],[23,'diagnóstico no dashboard'],[35,'failover manual (runbook)']],down:[[10,35]],who:'Monitor sintético',act:'Operador (runbook)',
+      why:'Sensores medem a jornada a cada minuto a partir de 3 locais, e o alerta chega em 3 min. Quem decide ainda é um humano: abre o dashboard e executa o runbook de failover. Cabe no orçamento, mas um único incidente consome mais da metade dele.',
+      chain:['Cliente','CDN','LB','App ×2 zonas','Gateway A | B (manual)'],ctrl:{t:'Sensores → dashboards/alertas → <b>operador decide</b> e executa o runbook.',closed:false}},
+   4:{ev:[[10,'falha'],[11,'pedidos/min < 60% da base'],[11.5,'circuit breaker abre'],[12,'gateway B assume']],down:[[10,12]],who:'Sensor de negócio',act:'Circuit breaker + failover',
+      why:'O sensor de negócio (pedidos concluídos/min contra a linha de base sazonal) detecta antes de qualquer métrica de infra. O controlador abre o circuit breaker e a redundância ativa encaminha os pagamentos para o gateway B. O error budget restante governa os deploys, e a predição de campanha pré-escala o sistema.',
+      chain:['Cliente','CDN','LB','App ×2 zonas','Circuit breaker','Gateway A ⇄ B'],ctrl:{t:'SLI de negócio → comparação com o SLO → <b>atuador automático</b> (breaker, failover, degradação). Política de error budget congela deploys.',closed:true}}}},
+ fam:{title:'Abertura das vendas (5.000 pessoas); no minuto 8 o banco perde 30% de capacidade.',budget:21.6,xmax:40,ylab:'latência p95 do checkout (ms)',slo:2000,
+  lv:{
+   1:{lat:t=>t<1?3000:(t<35?3000:250),err:[[1,35]],who:'Comprador (redes sociais)',act:'Restart manual',over:'Alto risco: sem controle atômico de estoque',
+      ev:[[0,'abertura'],[1,'banco esgota conexões'],[35,'restart após pico']],
+      why:'Sem fila, os 5.000 chegam direto ao Ticket Service e ρ passa de 1. As conexões do banco esgotam e o sistema cai. O estoque em contador sem lock permite overselling.',
+      chain:['Cliente','LB','Ticket Service','PostgreSQL'],ctrl:null},
+   2:{lat:t=>t<22?3000:300,err:[[0,22]],who:'Suporte + reclamações',act:'Escala manual',over:'Possível: conciliação manual pós-venda',
+      ev:[[0,'abertura'],[8,'suporte percebe'],[22,'escala manual concluída']],
+      why:'A "fila" é uma página estática de site lotado. A equipe monitora CPU e escala manualmente. A queda inteira acontece na hora que importa, e as vendas duplicadas são conciliadas depois, em planilha.',
+      chain:['Cliente','CDN','LB','Ticket Service ×N (manual)','PostgreSQL'],ctrl:{t:'Pessoas observam CPU/memória e escalam; logs sem correlação por compra.',closed:false}},
+   3:{lat:t=>t<8?200:(t<20?Math.min(3000,200+(t-8)*400):Math.max(200,3000-(t-20)*900)),err:[],who:'Alerta p95 (Grafana)',act:'Operador ajusta vazão',over:'0: reserva atômica testada',
+      ev:[[0,'abertura, fila a 37,5 req/s'],[8,'banco degrada'],[12.5,'alerta p95 > 2 s'],[20,'operador reduz a vazão']],
+      why:'A fila com vazão fixa de 37,5 req/s, dimensionada por Little/M/M/1, mantém ρ = 0,75. Quando a capacidade cai, a mesma vazão leva ρ acima de 1, a fila interna cresce e o p95 estoura. O alerta dispara, mas a correção espera um humano. É uma malha aberta bem dimensionada que não reage a perturbações.',
+      chain:['Cliente','CDN','LB','Fila virtual (vazão fixa)','Ticket','Reserva atômica','PostgreSQL'],ctrl:{t:'Prometheus/Grafana/Loki → alerta → <b>operador muda a vazão</b> manualmente.',closed:false}},
+   4:{lat:t=>t<8?200:(t<9?200+(t-8)*300:200),err:[],who:'Controlador (p95, μ, conversão)',act:'Fila reajusta vazão em 60 s',over:'0: invariante monitorado e bloqueio automático',
+      ev:[[0,'abertura com pré-aquecimento'],[8,'banco degrada'],[9,'vazão reajustada para 0,75·μ']],
+      why:'A vazão da fila vira variável controlada: λ = 0,75·μ medido. Quando o banco degrada, o controlador reduz a admissão em menos de um minuto e o p95 nem chega perto do SLO. Sensores de negócio (conversão, reservas expiradas, vendidos + reservas ≤ 450) encerram a fila com "esgotado" no momento certo.',
+      chain:['Cliente','CDN','LB','Fila virtual (λ controlado)','Ticket','Reserva atômica','PostgreSQL + réplica'],ctrl:{t:'SLI técnico + de negócio → controlador → <b>atuador automático</b> na vazão, no captcha e no encerramento da fila. Predição: pré-aquecimento antes da abertura.',closed:true}}}}};
+
+const fmt=(x,d=1)=>x.toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
+function series(){
+ const C=SIM[st.cs],L=C.lv[st.lv],pts=[];
+ for(let t=0;t<=C.xmax;t+=C.xmax/300){
+  if(st.cs==='ecom'){const down=L.down.some(([a,b])=>t>=a&&t<b);pts.push([t,down?0:100])}
+  else pts.push([t,L.lat(t)]);
+ }return pts;
+}
+function outMin(){
+ const C=SIM[st.cs],L=C.lv[st.lv];
+ if(st.cs==='ecom')return L.down.reduce((s,[a,b])=>s+b-a,0);
+ let m=0,dt=.05;for(let t=0;t<C.xmax;t+=dt){if(L.lat(t)>C.slo)m+=dt}return Math.round(m);
+}
+const s=$('chart');
+function draw(){
+ const C=SIM[st.cs],L=C.lv[st.lv],W=s.clientWidth,H=s.clientHeight,lv=LV[st.lv-1];
+ const m={l:W<520?44:56,r:30,t:40,b:36},iw=W-m.l-m.r,ih=H-m.t-m.b;
+ const ymax=st.cs==='ecom'?100:3000;
+ const x=t=>m.l+t/C.xmax*iw,y=v=>m.t+ih-v/ymax*ih;
+ const P=series();
+ let g='';
+ const ticks=st.cs==='ecom'?[0,50,100]:[0,1000,2000,3000];
+ ticks.forEach(v=>{g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--rule)"/><text x="${m.l-6}" y="${y(v)+4}" text-anchor="end">${st.cs==='ecom'?v+'%':(v/1000)+' s'}</text>`});
+ const step=C.xmax>100?(W<520?50:25):(W<520?10:5);
+ for(let t=0;t<=C.xmax;t+=step)g+=`<text x="${x(t)}" y="${H-12}" text-anchor="middle">${t} min</text>`;
+ if(st.cs==='fam'){g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y(C.slo)}" y2="${y(C.slo)}" stroke="var(--red)" stroke-dasharray="5 4"/><text x="${W-m.r}" y="${y(C.slo)-6}" text-anchor="end" style="fill:var(--red)">SLO p95 2 s</text>`;
+  (L.err||[]).forEach(([a,b])=>{g+=`<rect x="${x(a)}" y="${m.t}" width="${x(b)-x(a)}" height="${ih}" fill="var(--red)" opacity=".08"/>`});}
+ else (L.down).forEach(([a,b])=>{g+=`<rect x="${x(a)}" y="${m.t}" width="${Math.max(2,x(b)-x(a))}" height="${ih}" fill="var(--red)" opacity=".1"/>`});
+ const d=P.map((p,i)=>(i?'L':'M')+x(p[0]).toFixed(1)+' '+y(p[1]).toFixed(1)).join('');
+ g+=`<path d="${d}" fill="none" stroke="${lv.c}" stroke-width="3" stroke-linejoin="round"/>`;
+ let lastX=-999,row=0;
+ L.ev.forEach(([t,lab])=>{const X=x(t);row=X-lastX<120?row+1:0;lastX=X;const Y=12+row*0;g+=`<line x1="${X}" x2="${X}" y1="${m.t-6}" y2="${m.t+ih}" stroke="var(--ink)" stroke-dasharray="2 3" opacity=".5"/>`});
+ g+=`<text x="${m.l}" y="20" style="fill:var(--ink);font-weight:600">${C.ylab}</text>`;
+ s.innerHTML=g;
+}
+const ro=new ResizeObserver(draw);ro.observe(s);
+function renderSim(){
+ const C=SIM[st.cs],L=C.lv[st.lv],lv=LV[st.lv-1];
+ $('simIntro').innerHTML=`<b>Perturbação:</b> ${C.title} <b>Nível:</b> <span style="color:${lv.c};font-weight:700">N${lv.n} ${lv.name}</span>. Eventos: ${L.ev.map(e=>`<span style="white-space:nowrap">${fmt(e[0],e[0]%1?1:0)} min</span> ${e[1]}`).join(' · ')}.`;
+ const om=outMin(),pct=om/C.budget*100;
+ let k=[];
+ if(st.cs==='ecom'){const av=100*(43200-om)/43200,cr=av>=99.9?'0%':av>=99?'5%':av>=95?'10%':'20%';
+  k=[['Indisponível',om+' min',''],['Orçamento usado',fmt(pct,0)+'%',pct>100?'<i class="warn">SLA violado</i>':'<i>de 43,2 min/mês</i>'],['Disponibilidade no mês',fmt(av,2)+'%','<i>crédito '+cr+'</i>'],['Detecta / age',L.who,'<i>'+L.act+'</i>']];}
+ else k=[['p95 acima do SLO',om+' min',''],['Do orçamento do mês',fmt(pct,0)+'%',pct>100?'<i class="warn">estoura 21,6 min</i>':'<i>de 21,6 min/mês</i>'],['Overselling',L.over.split(':')[0],'<i>'+(L.over.split(':')[1]||'')+'</i>'],['Detecta / age',L.who,'<i>'+L.act+'</i>']];
+ $('kpis').innerHTML=k.map(a=>`<div class="kpi"><span>${a[0]}</span><b style="${a[1].length>12?'font-size:18px;white-space:normal':''}">${a[1]}</b>${a[2]}</div>`).join('');
+ $('chain').innerHTML=L.chain.map((c,i)=>`${i?'<span class="arr">→</span>':''}<span class="chip ${/breaker|Fila|Reserva|⇄|controlad/i.test(c)?'t':''}" style="--c:${lv.c}">${c}</span>`).join('');
+ $('ctrlbox').innerHTML=L.ctrl?`<div class="ctrl ${L.ctrl.closed?'closed':''}" style="--c:${lv.c}"><b>${L.ctrl.closed?'↺ Malha fechada':'Camada de observação'}</b><br>${L.ctrl.t}</div>`:`<div class="ctrl" style="--c:var(--n1)"><b>Sem camada de controle.</b> Ninguém observa; o cliente é o sensor.</div>`;
+ $('why').textContent=L.why;
+ draw();
+}
+
+/* ---------- ADRs ---------- */
+const ADR={ecom:{id:'ADR-ECOM-007',t:'Disponibilidade do checkout (meta 99,9%)',lv:{
+ 1:{st:'Aceito (implícito)',ctx:'Precisamos lançar a loja até a campanha de novembro.',dec:'Publicar a aplicação monolítica em um servidor; integrar o gateway A direto no código do checkout. "Disponibilidade a gente vê depois."',tat:['Nenhuma'],cen:'Inexistente. O 99,9% foi copiado do contrato.',ctl:'Nenhum. O cliente avisa.',cons:['Ponto único de falha no servidor e no gateway','Sem como saber se o SLA foi cumprido']},
+ 2:{st:'Aceito',ctx:'Houve quedas em fins de semana; o contrato exige 99,9% mensal e prevê créditos.',dec:'Monitorar CPU, memória e disco com Zabbix; plantão de suporte 24×7; runbook de restart na wiki; backup diário do banco; cálculo mensal da disponibilidade a partir dos tickets.',tat:['Monitor (só infraestrutura)','Restart manual','Backup (passivo)'],cen:'"O sistema deve ficar disponível 99,9% do mês." Sem fonte, estímulo ou medida de resposta.',ctl:'Pessoas: o suporte recebe o ticket e o operador executa o runbook.',cons:['Falhas de aplicação/gateway não aparecem na monitoração','Medida depende de tickets: subnotifica','RTO de 1 h já não cabe no orçamento']},
+ 3:{st:'Aceito',ctx:'O checkout responde por 100% da receita; o orçamento é 43,2 min/mês; o gateway é o componente mais instável (exclusão contratual mascara o problema).',dec:'Redundância ativa da aplicação em 2 zonas atrás do LB; health checks; monitor sintético de 1 min em 3 locais (indisponível = 2 de 3 falham); SLIs por jornada (home, busca, carrinho, checkout, auth) em Prometheus/Grafana; alerta ao plantão; runbook de failover manual para o gateway B.',tat:['Ping/echo + heartbeat','Monitor sintético de jornada','Redundância ativa (app)','Redundância passiva (gateway B, manual)'],cen:'<b>Fonte:</b> gateway A · <b>Estímulo:</b> timeout > 5 s em 50% das transações · <b>Artefato:</b> checkout · <b>Ambiente:</b> pico de campanha · <b>Resposta:</b> alerta e failover pelo runbook · <b>Medida:</b> detecção ≤ 3 min, MTTR ≤ 30 min, ≤ 70% do orçamento por incidente.',ctl:'Malha aberta: sensores e alertas automáticos; a decisão e a ação são humanas.',cons:['Detecção em minutos, recuperação ainda em dezenas de minutos','RTO revisado para 30 min (coerente com o orçamento)','Custo de 2 zonas e de plantão treinado']},
+ 4:{st:'Aceito · revisão trimestral do SLO',ctx:'Mesmo com N3, um incidente consome mais de 50% do orçamento. A receita por minuto no pico justifica a automação. As campanhas são previsíveis no calendário.',dec:'SLO de checkout 99,9% gerido por error budget. Sensor de negócio: pedidos concluídos/min contra a linha de base sazonal. Controlador: circuit breaker no PaymentAdapter com failover automático A⇄B (redundância ativa); degradação graciosa (desliga recomendações e frete estimado); política de budget (< 25% restante congela deploys); autoscaling preditivo por calendário de campanhas.',tat:['Detecção por negócio (business driver)','Circuit breaker + redundância ativa','Degradação graciosa','Modelo preditivo (escala antecipada)','Política de error budget (atua no processo)'],cen:'as Behavior: "Dado gateway A e B ativos e 3× o tráfego médio, quando A responde > 5 s para 50% das transações, então o breaker abre em ≤ 30 s e pedidos/min voltam a ≥ 90% da base em ≤ 2 min." Executado em teste de caos mensal e medido continuamente em produção.',ctl:'Malha fechada: setpoint SLO → sensor (pedidos/min, p95) → controlador (breaker/política) → atuador (failover, degradação, congelamento de deploy).',cons:['Indisponibilidade por incidente em minutos ou segundos','Complexidade: dois gateways, testes de caos, política versionada','Humanos passam a ajustar setpoints e não a executar recuperação']}}},
+ fam:{id:'ADR-001',t:'Fila virtual e controle de admissão',lv:{
+ 1:{st:'Aceito (implícito)',ctx:'Venda de 450 ingressos com demanda de 5.000 pessoas.',dec:'Ticket Service atende todos diretamente; estoque é um contador decrementado na aplicação. "Se travar, a gente reinicia."',tat:['Nenhuma'],cen:'Inexistente.',ctl:'Nenhum.',cons:['ρ > 1 na abertura: colapso','Overselling possível (RN002 sem garantia)']},
+ 2:{st:'Aceito',ctx:'A demanda é superior à capacidade (texto do ADR-001 original).',dec:'Implementar fila virtual antes do checkout (página de espera); equipe acompanha CPU durante a abertura e escala manualmente; conciliação manual de vendas duplicadas.',tat:['Fila (sem vazão definida)','Escala manual','Conciliação manual'],cen:'Benefícios declarados ("evita overselling", "garante previsibilidade") sem medida.',ctl:'Pessoas observam e reagem.',cons:['Maior complexidade técnica','Tempo de espera para usuários','Benefícios não verificáveis']},
+ 3:{st:'Aceito',ctx:'5.000 compradores para 450 ingressos; SLO p95 < 2 s; 0 overselling; capacidade medida do checkout μ ≈ 50 req/s.',dec:'Fila virtual com vazão fixa λ = 37,5 req/s (ρ = 0,75 por M/M/1; espera estimada por Little: posição 2.250 ≈ 1 min). Decisão separada (ADR-002): reserva atômica com UPDATE condicional (estoque_livre > 0) e TTL de 10 min. Métricas em Prometheus/Grafana/Loki; alerta de p95 e do invariante de estoque; operador ajusta a vazão no painel.',tat:['Controle de admissão (vazão fixa)','Transação atômica / lock','Expiração automática (TTL)','Monitor + alerta'],cen:'<b>Fonte:</b> 5.000 compradores · <b>Estímulo:</b> 1.000 entradas em 30 s · <b>Artefato:</b> checkout · <b>Ambiente:</b> abertura das vendas · <b>Resposta:</b> admissão dosada · <b>Medida:</b> p95 < 2 s, 0 overselling, 450/450 vendidos. Verificado por k6 e teste de concorrência.',ctl:'Malha aberta: λ é constante de projeto; a correção depende do operador.',cons:['Excelente no cenário nominal','Sensível a perturbação: se μ cai, ρ > 1 até alguém agir','Exige plantão atento na abertura']},
+ 4:{st:'Aceito · revisado após cada evento',ctx:'O cenário nominal (N3) foi validado, mas a capacidade real varia (banco, gateway, bots). O negócio exige 450/450 com experiência justa na 1ª hora.',dec:'A vazão vira variável controlada: λ = 0,75·μ medido a cada 10 s, com redução adicional se p95 > 1,5 s. Sensores de negócio: conversão, reservas expiradas/min, invariante vendidos + reservas ≤ 450. Atuadores: vazão da fila, captcha reforçado quando o bot score sobe, encerramento da fila ("esgotado") quando livres = 0 e reservas = 0. Predição: pré-aquecimento com base nos inscritos da sala de espera. Réplica para RPO de 5 min.',tat:['Observação de business drivers','Controle de admissão por realimentação','Detecção por negócio (conversão, invariante)','Recuperação ativa (réplica, failover)','Predição (pré-aquecimento)'],cen:'as Behavior + as Code: "Dada degradação de 30% do banco aos 8 min, então a vazão é reajustada em ≤ 60 s, o p95 fica < 2 s em ≥ 99% dos minutos e vendidos + reservas ≤ 450 sempre." Teste de caos no ensaio geral e controlador em produção.',ctl:'Malha fechada: SLO (setpoint) → p95, μ e conversão (sensores) → controlador → fila/captcha/encerramento (atuadores).',cons:['Robustez a perturbações sem intervenção humana','Controlador precisa de testes próprios (oscilação, limites)','Humanos definem setpoints e regras de justiça da fila']}}}};
+const ASPECTS=[['Tática nomeada','—','infra + manual','sim, medida','sim, encadeada'],['Cenário com medida','—','—','sim (6 partes)','sim, contínuo'],['Sensor em produção','cliente','CPU / tickets','SLI técnico','SLI técnico + negócio'],['Quem age','dev','operador','operador + runbook','controlador'],['Predição','—','—','—','sim']];
+function renderAdr(){
+ const A=ADR[st.cs],a=A.lv[st.lv],lv=LV[st.lv-1];
+ $('adrTitle').textContent=`${A.id}: ${A.t}`;
+ $('adrCard').innerHTML=`<article class="adr" style="--c:${lv.c}"><span class="tag">N${lv.n} · ${lv.name}</span><h3 style="margin-top:10px">${A.id} · ${A.t}</h3><dl>
+ <dt>Status</dt><dd>${a.st}</dd><dt>Contexto</dt><dd>${a.ctx}</dd><dt>Decisão</dt><dd>${a.dec}</dd>
+ <dt>Táticas</dt><dd><ul>${a.tat.map(x=>`<li>${x}</li>`).join('')}</ul></dd>
+ <dt>Cenário de aferição</dt><dd>${a.cen}</dd><dt>Controle</dt><dd>${a.ctl}</dd>
+ <dt>Consequências</dt><dd><ul>${a.cons.map(x=>`<li>${x}</li>`).join('')}</ul></dd></dl></article>`;
+ $('adrCmp').innerHTML=ASPECTS.map(r=>`<tr><td>${r[0]}</td>${r.slice(1).map((v,i)=>`<td style="${i+1===st.lv?'font-weight:700;color:'+LV[i].c:''}">${v}</td>`).join('')}</tr>`).join('');
+}
+
+/* ---------- Dinâmica 2 ---------- */
+const G2=[
+ ['G1','Admissão (fila virtual) · RF002/RF003','p95 < 2 s com banco degradado','k6 ramping-arrival-rate','Controlador λ = 0,75·μ','1 e 2'],
+ ['G2','Estoque atômico · RN001/RN002','2 compradores, 1 ingresso: só 1 aprovado','Teste de concorrência (N threads)','Alerta do invariante vendidos + reservas ≤ 450','3'],
+ ['G3','Reserva temporária · RN004/RN005','Reserva expira em 10 min ± 5 s e volta ao estoque','Teste com relógio controlado','Métrica de reservas expiradas/min + job de expiração','3'],
+ ['G4','Bots e CPF (C e I) · RN003, RNF006','500 bots bloqueados, 100 legítimos preservados','Simulação 04 automatizada','Rate limit + captcha adaptativo pelo bot score','1'],
+ ['G5','Recuperação · RNF001/004/005','Falha do primário: RTO e RPO medidos','Failover em ensaio (caos)','SLO por janela crítica + failover automático','4']];
+$('g2').innerHTML=G2.map(g=>`<tr>${g.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('');
+document.querySelectorAll('.copy').forEach(b=>b.addEventListener('click',async()=>{try{await navigator.clipboard.writeText($(b.dataset.copy).textContent);b.textContent='Copiado'}catch(e){b.textContent='Selecione e copie'}setTimeout(()=>b.textContent='Copiar',1600)}));
+
+/* ---------- caminho ---------- */
+const PATH=[
+ ['Táticas de detecção','nenhuma; o cliente detecta','monitor de infra (CPU, disco)','ping/echo, heartbeat, monitor sintético de jornada','detecção por negócio (pedidos/min, conversão, invariantes)'],
+ ['Táticas de recuperação','restart ad hoc','restart e backup por runbook','redundância ativa/passiva acionada por humano','redundância ativa automática, circuit breaker, degradação graciosa'],
+ ['Táticas de prevenção','—','janelas de manutenção','capacidade dimensionada (Little, M/M/1)','predição: escala antecipada, pré-aquecimento, error budget'],
+ ['Cenário de aferição','inexistente','meta numérica sem medida ("99,9%")','6 partes com medida, verificado em teste','cenário executável e medido continuamente em produção'],
+ ['Forma da especificação','as Document','as Document + as Test','as Behavior + sensores as Code','as Code + as Control (controlador versionado)'],
+ ['Quem fecha o laço','ninguém','pessoas','pessoas, guiadas por painéis','o próprio sistema; pessoas ajustam setpoints'],
+ ['Critério para subir','nomear uma tática por RNF','escrever o cenário com medida','ligar o alerta a um atuador automático','revisar setpoints com dados de negócio']];
+$('path').innerHTML=PATH.map(r=>`<tr><td>${r[0]}</td>${r.slice(1).map(v=>`<td>${v}</td>`).join('')}</tr>`).join('');
+
+/* ---------- régua ---------- */
+const Q=['O ADR nomeia ao menos uma tática arquitetural por RNF.','Existe um processo definido (runbook, plantão) para quando a qualidade falha.','Existe cenário com medida da resposta (6 partes).','A medida é coletada automaticamente em produção (SLI).','Existe atuador automático ligado à medida (sem humano no caminho crítico).','O sensor observa sinais de negócio e/ou há predição.'];
+$('rubric').innerHTML='<h3>Marque o que o ADR do seu grupo tem</h3>'+Q.map((q,i)=>`<label><input type="checkbox" id="q${i}"> ${q}</label>`).join('');
+function rub(){const v=Q.map((_,i)=>$('q'+i).checked);
+ const n=(v[4]&&v[5]&&v[3])?4:(v[3]&&v[2])?3:(v[0]||v[1])?2:1;const l=LV[n-1];
+ const next={1:'Nomeie a tática para cada RNF e o processo de resposta.',2:'Escreva o cenário com medida e instrumente o SLI em produção.',3:'Ligue o alerta a um atuador automático e acrescente um sensor de negócio.',4:'Mantenha: revise setpoints com dados de cada evento e teste o controlador (caos).'}[n];
+ $('rubOut').innerHTML=`<span class="note">Seu ADR está em</span><div class="result" style="--c:${l.c}">N${n} · ${l.name}</div><p style="margin-top:10px"><b>Próximo passo:</b> ${next}</p>`;}
+Q.forEach((_,i)=>$('q'+i).addEventListener('change',rub));
+
+/* ---------- sincronização ---------- */
+function sync(){
+ document.querySelectorAll('[data-lv]').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.lv===st.lv));
+ document.querySelectorAll('[data-case]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.case===st.cs));
+ const l=LV[st.lv-1];$('lvdesc').innerHTML=`<b style="color:${l.c}">N${l.n} ${l.name}:</b> ${l.tr}`;
+ renderSim();renderAdr();save();
+}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-lv],[data-case]');if(!b||b.tagName==='INPUT')return;
+ if(b.dataset.lv)st.lv=+b.dataset.lv;if(b.dataset.case)st.cs=b.dataset.case;sync()});
+sync();rub();
+}
+</script>
+</body>
+</html>
